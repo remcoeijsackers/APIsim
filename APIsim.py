@@ -1,5 +1,5 @@
 
-from apib import req_tor
+
 from types import new_class
 from typing import Text
 import requests
@@ -18,7 +18,7 @@ from tqdm.cli import main
 # https://stackoverflow.com/questions/62007674/multi-thread-requests-python3
 
 
-class abreaker:
+class apisim:
     def __init__(self, endpoints, commands=None, body=None, loop=False, repeat=0, sleeptime=0) -> None:
         super().__init__()
         self.endpoints = endpoints
@@ -158,10 +158,9 @@ class abreaker:
 
 
 url_list = ['http://httpbin.org/ip', 'http://httpbin.org/ip']
-u = abreaker(endpoints=url_list,
-             commands=("get"),
-             # body=(",data={}".format(js)),
-             repeat=5)
+u = apisim(endpoints=url_list,
+           commands=("get"),
+           repeat=5)
 
 u.call()
 u.print_responses()
