@@ -1,10 +1,6 @@
-
-
-from types import new_class
 from typing import Text
 import requests
 import json
-import asyncio
 import time
 import tqdm
 import pandas as pd
@@ -14,8 +10,6 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from torpy.http.requests import TorRequests
 
 from tqdm.cli import main
-
-# https://stackoverflow.com/questions/62007674/multi-thread-requests-python3
 
 
 class apisim:
