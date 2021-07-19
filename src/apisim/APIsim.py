@@ -31,6 +31,7 @@ class apisim:
         self._password = any
         self._auth = any
         self._token = any
+        self._calls = 0
 
     def normType(self, type_var):
         if type(type_var) is str:
@@ -84,7 +85,8 @@ class apisim:
     def safe_request(self, url):
         #time.sleep(self.sleeptime)
         if self.print_steps:
-            print("safe "+ self.commands + ' on endpoint ' + url)
+            self._calls += 1
+            print(str(self._calls) + "safe "+ self.commands + ' on endpoint ' + url)
         def req_tor(url):
             try:
                 with TorRequests() as tor_requests:
@@ -111,8 +113,9 @@ class apisim:
                 self._responses.append(res.content)
                 self._endpoints.append(url)
                 self._elapsed_time.append(res.elapsed.total_seconds())
+                self._calls += 1
                 if self.print_steps:
-                    print("'" + self.commands + "'" + ' on endpoint ' + url)
+                    print(str(self._calls) + "'" + self.commands + "'" + ' on endpoint ' + url)
             #except requests.exceptions.RequestException as e:
             except:
                 self.safe_request(url)
