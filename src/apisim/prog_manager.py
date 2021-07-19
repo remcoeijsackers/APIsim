@@ -52,12 +52,20 @@ args = parser.parse_args()
 
 if args.url:
     #url_list = [args.url]
-    url_list = args.url
-    u = apisim(endpoints=url_list,
+   url_list = args.url
+   if len(url_list) > 1:
+         u = apisim(endpoints=url_list,
+           commands=(args.command),
+           repeat=args.repeat, 
+           sleeptime=args.delay, 
+           print_steps=args.printsteps,
+           _backup_mode="multi")
+   else:
+      u = apisim(endpoints=url_list,
            commands=(args.command),
            repeat=args.repeat, 
            sleeptime=args.delay, 
            print_steps=args.printsteps)
-    u.call()
-    if args.verbose:
-        u.print_responses()
+   u.call()
+   if args.verbose:
+      u.print_responses()

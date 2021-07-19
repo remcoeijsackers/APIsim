@@ -6,13 +6,14 @@ import tqdm
 import pandas as pd
 import requests
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from torpy.http.requests import TorRequests
+from torpy.http.requests import TorRequests, tor_requests_session
 
 from tqdm.cli import main
 from tabulate import tabulate
+from multiprocessing.pool import ThreadPool
 
 class apisim:
-    def __init__(self, endpoints, commands=None, body=None, loop=False, repeat=0, sleeptime=0, print_steps=False, verbose=False) -> None:
+    def __init__(self, endpoints, commands=None, body=None, loop=False, repeat=0, sleeptime=0, print_steps=False, verbose=False, _backup_mode="single") -> None:
         super().__init__()
         self.endpoints = endpoints
         self.commands = commands
@@ -26,6 +27,8 @@ class apisim:
         self._endpoints = []
         self._elapsed_time = []
         self._mode = []
+        self._status = []
+        self._backup_mode = _backup_mode
         self._tables = any
         self._login = any
         self._password = any
@@ -92,19 +95,52 @@ class apisim:
                 with TorRequests() as tor_requests:
                     with tor_requests.get_session() as sess:
                         res = sess.get(url).json()
-                    self._responses.append(res)
-                    self._endpoints.append(url)
-                    self._elapsed_time.append(0)
-                    self._mode.append("safe")
+                        self._responses.append(res)
+                        self._endpoints.append(url)
+                        self._elapsed_time.append(0) #TODO: add timeit
+                        self._mode.append(self.commands +" -Safe")
+                        self._status.append(0) #TODO: Add statuscode
             except e:
                 print(e)
-   
         req_tor(url)
+        #return self._tables
+
+    def multi_safe_request(self, url):
+        RETRIES = 3
+        if self.print_steps:
+            self._calls += 1
+            print(str(self._calls) + "Multi-safe "+ self.commands + ' on endpoint ' + url)
+
+        with TorRequests() as tor_requests:
+            with tor_requests.get_session(retries=RETRIES) as sess:
+
+                def process(url):
+                    try:
+                        print('get link: %s', url)
+                        r = sess.get(url, timeout=30)
+                        print('get link %s finish: %s', url, r.text)
+                        self._responses.append(r.text)
+                        return r.text
+                    except BaseException:
+                        print('get link %s error', url)
+
+                pool = ThreadPool(10)
+                for i, w in enumerate(pool._pool):
+                    w.name = 'Worker{}'.format(i)
+                results = pool.map(process, [url])
+                pool.close()
+                pool.join()
+        print(results)
+        self._endpoints.append(url)
+        self._elapsed_time.append(0) #TODO: add timeit
+        self._mode.append(self.commands +" -Safe")
+        self._status.append(0) #TODO: Add statuscode
+  
 
     def multi_request(self):
         time.sleep(self.sleeptime)
         def req(url):
-            try:
+            #try:
                 if self.commands == 'get':
                     res = requests.get(url, stream=True)
                 if self.commands == 'post':
@@ -113,14 +149,22 @@ class apisim:
                 self._responses.append(res.content)
                 self._endpoints.append(url)
                 self._elapsed_time.append(res.elapsed.total_seconds())
+                self._status.append(res.status_code)
                 self._calls += 1
+                if res.status_code == 429:
+                    del self._mode[-1]
+                    self._mode.append(self.commands + "- Failed")
+                    if self._backup_mode == "single":
+                        self.safe_request(url)
+                    else:
+                        self.multi_safe_request(url)
                 if self.print_steps:
                     print(str(self._calls) + "'" + self.commands + "'" + ' on endpoint ' + url)
             #except requests.exceptions.RequestException as e:
-            except:
-                self.safe_request(url)
-     
-                
+            #except:
+                #TODO: Implement login/tor routine, depending on status
+             #   self.safe_request(url)
+      
         threads = []
 
         with ThreadPoolExecutor(max_workers=50) as executor:
@@ -134,10 +178,7 @@ class apisim:
             #for task in as_completed(threads):
             #    return task.result()
 
-        self._tables = pd.DataFrame(
-                list(zip(self._endpoints, self._responses, self._elapsed_time, self._mode)))
-        self._tables.columns = ["endpoint", "value", "time", "mode"]
-        return self._tables
+        #return self._tables
 
     def login(self, url, username, password, command=None):
         if command == None:
@@ -150,8 +191,12 @@ class apisim:
             pass
 
     def print_responses(self):
+        self._tables = pd.DataFrame(
+                list(zip(self._endpoints, self._responses, self._elapsed_time, self._mode, self._status)))
+        self._tables.columns = ["endpoint", "value", "time", "mode", "status"]
         print("\n")
         print(tabulate(self._tables, headers='keys', tablefmt='psql'))
+        #return
 
     def call(self, command=None):
         """
