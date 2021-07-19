@@ -13,7 +13,7 @@ from tabulate import tabulate
 from multiprocessing.pool import ThreadPool
 
 class apisim:
-    def __init__(self, endpoints, commands=None, body=None, loop=False, repeat=0, sleeptime=0, print_steps=False, verbose=False, _backup_mode="single") -> None:
+    def __init__(self, endpoints, commands=None, body=None, loop=False, repeat=0, sleeptime=0, print_steps=False, verbose=False, _backup_mode="single", fallback_enabled=True) -> None:
         super().__init__()
         self.endpoints = endpoints
         self.commands = commands
@@ -30,61 +30,13 @@ class apisim:
         self._status = []
         self._outcome = []
         self._backup_mode = _backup_mode
+        self.fallback_enabled = fallback_enabled
         self._tables = any
         self._login = any
         self._password = any
         self._auth = any
         self._token = any
         self._calls = 0
-
-    def normType(self, type_var):
-        if type(type_var) is str:
-            return type_var
-        if type(type_var) is Text or int:
-            return str(type_var)
-        try:
-            json.dumps(type_var)
-        except:
-            return "unkown value"
-
-    def slow_request(self):
-        time.sleep(self.sleeptime)
-        def _irequest(endpoint, command, body=None):
-            if body is None:
-                response = eval('requests.{}(endpoint)'.format(command))
-            else:
-                response = eval(
-                    'requests.{}(endpoint {})'.format(command, body))
-            res = response.text
-            return res
-        responses = []
-        lendpoints = []
-        loop = any
-        if self.loop is True:
-            loop = True
-
-        while loop:
-            if self.body is None:
-                x = _irequest(self.endpoints, self.commands)
-                ne = self.normType(x)
-                responses.append(ne)
-                lendpoints.append(self.endpoints)
-            else:
-                if command == "post":
-                    x = self._irequest(
-                        self.endpoints, self.commands, self.body)
-                else:
-                    x = self._irequest(self.endpoints, self.commands)
-                ne = self.normType(x)
-                responses.append(ne)
-                lendpoints.append(self.endpoints)
-            if self.sleeptime:
-                time.sleep(self.sleeptime)
-            if self.loop is False:
-                loop = False
-            self._tables = pd.DataFrame(list(zip(lendpoints, responses)))
-            self._tables.columns = ["endpoint", "value"]
-        return self._tables
 
     def safe_request(self, url):
         #time.sleep(self.sleeptime)
@@ -118,11 +70,7 @@ class apisim:
 
                 def process(url):
                     try:
-                        if self.print_steps:
-                            print('get link: %s', url)
                         r = sess.get(url, timeout=30)
-                        if self.print_steps:
-                            print('get link %s finish: %s', url, r.text)
                         self._responses.append(r.text)
                         return r.text
                     except BaseException:
@@ -144,7 +92,6 @@ class apisim:
     def multi_request(self):
         time.sleep(self.sleeptime)
         def req(url):
-            #try:
                 if self.commands == 'get':
                     res = requests.get(url, stream=True)
                 if self.commands == 'post':
@@ -157,16 +104,13 @@ class apisim:
                 self._calls += 1
                 if res.status_code == 429:
                     self._outcome.append("Failed")
-                    if self._backup_mode == "single":
-                        self.safe_request(url)
-                    else:
-                        self.multi_safe_request(url)
+                    if self.fallback_enabled:
+                        if self._backup_mode == "single":
+                            self.safe_request(url)
+                        else:
+                            self.multi_safe_request(url)
                 if self.print_steps:
                     print(str(self._calls) + "'" + self.commands + "'" + ' on endpoint ' + url)
-            #except requests.exceptions.RequestException as e:
-            #except:
-                #TODO: Implement login/tor routine, depending on status
-             #   self.safe_request(url)
       
         threads = []
 
@@ -178,10 +122,7 @@ class apisim:
                 else:
                     for repeat in range(self.repeat):
                         threads.append(executor.submit(req, url))
-            #for task in as_completed(threads):
-            #    return task.result()
 
-        #return self._tables
 
     def login(self, url, username, password, command=None):
         if command == None:
@@ -217,8 +158,6 @@ class apisim:
             return self.multi_request()
         if command == "slow":
             return self.slow_request()
-        if command == "save":
-            return self.save_request()
 
 
 

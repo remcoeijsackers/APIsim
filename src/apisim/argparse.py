@@ -1,9 +1,13 @@
 import argparse
 from APIsim import apisim
 
-parser = argparse.ArgumentParser(prog='APIsim',
+class pparser(argparse):
+   def __init__(self) -> None:
+      self.pars = argparse.ArgumentParser(prog='APIsim',
                                     usage='%(prog)s [options] url(s)',
                                     description='Simulate users calling an api')
+
+parser = pparser
 
 parser.add_argument('--url',
                        type=str,
@@ -41,8 +45,13 @@ parser.add_argument('--file',
 parser.add_argument('--printsteps',
                         '-ps', 
                        type=bool,
-                       help='input file to get data',
+                       help='print the api calling steps',
                        default=False
+                    )
+parser.add_argument('--fallback',
+                        '-fb', 
+                        action="store_true",
+                        help='fallback to tor if fails'
                     )
 
 parser.add_argument("-v", "--verbose", action="store_true",
@@ -51,21 +60,17 @@ parser.add_argument("-v", "--verbose", action="store_true",
 args = parser.parse_args()
 
 if args.url:
-    #url_list = [args.url]
    url_list = args.url
-   if len(url_list) > 1:
-         u = apisim(endpoints=url_list,
+   u = apisim(endpoints=url_list,
            commands=(args.command),
            repeat=args.repeat, 
            sleeptime=args.delay, 
            print_steps=args.printsteps,
-           _backup_mode="multi")
-   else:
-      u = apisim(endpoints=url_list,
-           commands=(args.command),
-           repeat=args.repeat, 
-           sleeptime=args.delay, 
-           print_steps=args.printsteps)
+           fallback_enabled=False)
+   if len(url_list) > 1:
+      u._backup_mode="multi"
+   if args.fallback:
+      u.fallback_enabled = True
    u.call()
    if args.verbose:
       u.print_responses()
