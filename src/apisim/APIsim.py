@@ -99,7 +99,7 @@ class apisim:
                         self._responses.append(res)
                         self._endpoints.append(url)
                         self._elapsed_time.append(0) #TODO: add timeit
-                        self._mode.append(self.commands +" -Safe")
+                        self._mode.append(self.commands)
                         self._outcome.append("succes (Safe)")
                         self._status.append(0) #TODO: Add statuscode
             except e:
