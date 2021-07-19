@@ -28,6 +28,7 @@ class apisim:
         self._elapsed_time = []
         self._mode = []
         self._status = []
+        self._outcome = []
         self._backup_mode = _backup_mode
         self._tables = any
         self._login = any
@@ -89,7 +90,7 @@ class apisim:
         #time.sleep(self.sleeptime)
         if self.print_steps:
             self._calls += 1
-            print(str(self._calls) + "safe "+ self.commands + ' on endpoint ' + url)
+            print(str(self._calls) + self.commands + ' on endpoint ' + url)
         def req_tor(url):
             try:
                 with TorRequests() as tor_requests:
@@ -99,6 +100,7 @@ class apisim:
                         self._endpoints.append(url)
                         self._elapsed_time.append(0) #TODO: add timeit
                         self._mode.append(self.commands +" -Safe")
+                        self._outcome.append("succes (Safe)")
                         self._status.append(0) #TODO: Add statuscode
             except e:
                 print(e)
@@ -116,9 +118,11 @@ class apisim:
 
                 def process(url):
                     try:
-                        print('get link: %s', url)
+                        if self.print_steps:
+                            print('get link: %s', url)
                         r = sess.get(url, timeout=30)
-                        print('get link %s finish: %s', url, r.text)
+                        if self.print_steps:
+                            print('get link %s finish: %s', url, r.text)
                         self._responses.append(r.text)
                         return r.text
                     except BaseException:
@@ -130,11 +134,11 @@ class apisim:
                 results = pool.map(process, [url])
                 pool.close()
                 pool.join()
-        print(results)
         self._endpoints.append(url)
         self._elapsed_time.append(0) #TODO: add timeit
-        self._mode.append(self.commands +" -Safe")
+        self._mode.append(self.commands)
         self._status.append(0) #TODO: Add statuscode
+        self._outcome.append("Success (Safe)")
   
 
     def multi_request(self):
@@ -152,8 +156,7 @@ class apisim:
                 self._status.append(res.status_code)
                 self._calls += 1
                 if res.status_code == 429:
-                    del self._mode[-1]
-                    self._mode.append(self.commands + "- Failed")
+                    self._outcome.append("Failed")
                     if self._backup_mode == "single":
                         self.safe_request(url)
                     else:
@@ -169,7 +172,7 @@ class apisim:
 
         with ThreadPoolExecutor(max_workers=50) as executor:
             for url in self.endpoints:
-                if self.verbose:
+                if self.print_steps:
                     for repeat in tqdm.tqdm(range(self.repeat)):
                         threads.append(executor.submit(req, url))
                 else:
@@ -192,8 +195,8 @@ class apisim:
 
     def print_responses(self):
         self._tables = pd.DataFrame(
-                list(zip(self._endpoints, self._responses, self._elapsed_time, self._mode, self._status)))
-        self._tables.columns = ["endpoint", "value", "time", "mode", "status"]
+                list(zip(self._endpoints, self._responses, self._elapsed_time, self._mode, self._status, self._outcome)))
+        self._tables.columns = ["endpoint", "value", "time", "mode", "status", "outcome"]
         print("\n")
         print(tabulate(self._tables, headers='keys', tablefmt='psql'))
         #return
