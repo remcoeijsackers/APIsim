@@ -81,7 +81,7 @@ class apisim:
             self._tables.columns = ["endpoint", "value"]
         return self._tables
 
-    def save_request(self, url):
+    def safe_request(self, url):
         #time.sleep(self.sleeptime)
         print('in save request')
         def req_tor(url):
@@ -97,8 +97,6 @@ class apisim:
                 print(e)
    
         req_tor(url)
-
-
 
     def multi_request(self):
         time.sleep(self.sleeptime)
@@ -116,8 +114,7 @@ class apisim:
                     print("'" + self.commands + "'" + ' on endpoint ' + url)
             #except requests.exceptions.RequestException as e:
             except:
-                print("using safe request routine")
-                self.save_request(url)
+                self.safe_request(url)
      
                 
         threads = []
@@ -171,8 +168,6 @@ class apisim:
         if command == "save":
             return self.save_request()
 
-    def push(self, command=None):
-        pass
 
 
 
