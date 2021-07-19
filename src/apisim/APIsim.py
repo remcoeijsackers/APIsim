@@ -144,6 +144,8 @@ class apisim:
         if command == "account":
             self._login = username
             self._password = password
+        if command == "key":
+            pass
 
     def print_responses(self):
         print("\n")
