@@ -38,40 +38,19 @@ class apisim:
         self._token = any
         self._calls = 0
 
-    def safe_request(self, url):
-        #time.sleep(self.sleeptime)
-        if self.print_steps:
-            self._calls += 1
-            print(str(self._calls) + self.commands + ' on endpoint ' + url)
-        def req_tor(url):
-            try:
-                with TorRequests() as tor_requests:
-                    with tor_requests.get_session() as sess:
-                        res = sess.get(url).json()
-                        self._responses.append(res)
-                        self._endpoints.append(url)
-                        self._elapsed_time.append(0) #TODO: add timeit
-                        self._mode.append(self.commands)
-                        self._outcome.append("succes (Safe)")
-                        self._status.append(0) #TODO: Add statuscode
-            except e:
-                print(e)
-        req_tor(url)
-        #return self._tables
-
     def multi_safe_request(self, url):
-        RETRIES = 3
         if self.print_steps:
             self._calls += 1
-            print(str(self._calls) + "Multi-safe "+ self.commands + ' on endpoint ' + url)
+            print(str(self._calls) + " Safe "+ self.commands + ' on endpoint ' + url)
 
         with TorRequests() as tor_requests:
-            with tor_requests.get_session(retries=RETRIES) as sess:
-
+            with tor_requests.get_session(retries=3) as sess:
                 def process(url):
                     try:
-                        r = sess.get(url, timeout=30)
-                        self._responses.append(r.text)
+                        res = sess.get(url, timeout=30)
+                        self._responses.append(res.text)
+                        self._elapsed_time.append(res.elapsed.total_seconds())
+                        self._status.append(res.status_code)
                         return r.text
                     except BaseException:
                         print('get link %s error', url)
@@ -83,10 +62,8 @@ class apisim:
                 pool.close()
                 pool.join()
         self._endpoints.append(url)
-        self._elapsed_time.append(0) #TODO: add timeit
         self._mode.append(self.commands)
-        self._status.append(0) #TODO: Add statuscode
-        self._outcome.append("Success (Safe)")
+        self._outcome.append("Success (Tor)")
   
 
     def multi_request(self):
@@ -105,9 +82,6 @@ class apisim:
                 if res.status_code == 429:
                     self._outcome.append("Failed")
                     if self.fallback_enabled:
-                        if self._backup_mode == "single":
-                            self.safe_request(url)
-                        else:
                             self.multi_safe_request(url)
                 if self.print_steps:
                     print(str(self._calls) + "'" + self.commands + "'" + ' on endpoint ' + url)
@@ -143,21 +117,10 @@ class apisim:
         #return
 
     def call(self, command=None):
-        """
-        call endpoints
-
-        Default: 
-        command=None use threading and call multiple endpoints in parralel
-
-        Options:
-        command="slow" use non threading and see the steps, usefull for debugging
-        command="save" use non threading and tor network to switch IP every call 
-
-        """
         if command == None:
             return self.multi_request()
-        if command == "slow":
-            return self.slow_request()
+        if command == "login":
+            return self.login()
 
 
 

@@ -1,13 +1,10 @@
 import argparse
 from APIsim import apisim
 
-class pparser(argparse):
-   def __init__(self) -> None:
-      self.pars = argparse.ArgumentParser(prog='APIsim',
+
+parser = argparse.ArgumentParser(prog='APIsim',
                                     usage='%(prog)s [options] url(s)',
                                     description='Simulate users calling an api')
-
-parser = pparser
 
 parser.add_argument('--url',
                        type=str,
@@ -67,8 +64,6 @@ if args.url:
            sleeptime=args.delay, 
            print_steps=args.printsteps,
            fallback_enabled=False)
-   if len(url_list) > 1:
-      u._backup_mode="multi"
    if args.fallback:
       u.fallback_enabled = True
    u.call()
