@@ -33,13 +33,21 @@ parser.add_argument('--delay',
 
 parser.add_argument('--file',
                         '-f', 
-                       type=int,
+                       type=str,
                        help='input file to get data',
-                       default=0
+                       default=""
+                    )
+
+parser.add_argument('--printsteps',
+                        '-ps', 
+                       type=bool,
+                       help='input file to get data',
+                       default=False
                     )
 
 parser.add_argument("-v", "--verbose", action="store_true",
                     help="increase output verbosity")
+
 args = parser.parse_args()
 
 if args.url:
@@ -49,7 +57,7 @@ if args.url:
            commands=(args.command),
            repeat=args.repeat, 
            sleeptime=args.delay, 
-           print_steps=False)
+           print_steps=args.printsteps)
     u.call()
     if args.verbose:
         u.print_responses()

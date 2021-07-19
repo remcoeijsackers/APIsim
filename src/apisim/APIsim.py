@@ -83,7 +83,8 @@ class apisim:
 
     def safe_request(self, url):
         #time.sleep(self.sleeptime)
-        print('in save request')
+        if self.print_steps:
+            print("safe "+ self.commands + ' on endpoint ' + url)
         def req_tor(url):
             try:
                 with TorRequests() as tor_requests:
@@ -135,8 +136,6 @@ class apisim:
         self._tables.columns = ["endpoint", "value", "time", "mode"]
         return self._tables
 
-
-
     def login(self, url, username, password, command=None):
         if command == None:
             data = '{%s,%s}'.format(username, password)
@@ -160,7 +159,7 @@ class apisim:
 
         Options:
         command="slow" use non threading and see the steps, usefull for debugging
-        command="save" use non threading and tor network to switch IP every call
+        command="save" use non threading and tor network to switch IP every call 
 
         """
         if command == None:
