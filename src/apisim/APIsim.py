@@ -145,9 +145,11 @@ class apisim:
         if command == "safe":
             return self.multi_safe_request(urls, mode)
         if command == "file":
-            return self.from_file(input_file, mode)
-        if command == "filepost":
-            return self.from_file(input_file, mode, body=)
+            if mode == "get":
+                return self.from_file(input_file, mode)
+            if mode == "post":
+                return self.from_file(input_file, mode, url=urls)
+
 
 
 

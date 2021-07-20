@@ -38,12 +38,7 @@ parser.add_argument('--file',
                        help='input file to get data',
                        default=""
                     )
-parser.add_argument('--filepost',
-                        '-fp', 
-                       type=str,
-                       help='input file to get data',
-                       default=""
-                    )
+
 
 parser.add_argument('--printsteps',
                         '-ps', 
@@ -76,10 +71,11 @@ if args.url:
    u.call(urls=url_list, mode=(args.command))
 
 if args.file:
-   u.call(command="file", mode=(args.command), input_file=args.file)
+   if args.command == "get":
+      u.call(command="file", mode=(args.command), input_file=args.file)
+   if args.command == "post":
+      u.call(command="file", mode=(args.command), urls=args.url, input_file=args.file)
 
-if args.filepost:
-   u.call(command="filepost", mode=(args.command), input_file=args.file)
 
 
 if args.verbose:
