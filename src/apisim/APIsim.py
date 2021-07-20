@@ -12,6 +12,7 @@ from tqdm.cli import main
 from tabulate import tabulate
 from multiprocessing.pool import ThreadPool
 
+import logging
 class apisim:
     def __init__(self, endpoints=None, commands=None, body=None, loop=False, repeat=0, sleeptime=0, print_steps=False, verbose=False, fallback_enabled=True) -> None:
         super().__init__()
@@ -40,7 +41,7 @@ class apisim:
     def multi_safe_request(self, url, mode):
         if self.print_steps:
             self._calls += 1
-            print(str(self._calls) + " Safe "+ mode + ' on endpoint ' + url)
+            logging.info(str(self._calls) + " Safe "+ mode + ' on endpoint ' + url)
 
         with TorRequests() as tor_requests:
             with tor_requests.get_session(retries=3) as sess:
@@ -52,7 +53,7 @@ class apisim:
                         self._status.append(res.status_code)
                         return r.text
                     except BaseException:
-                        print('get link %s error', url)
+                        logging.error('get link %s error', url)
 
                 pool = ThreadPool(10)
                 for i, w in enumerate(pool._pool):
@@ -67,10 +68,13 @@ class apisim:
 
     def multi_request(self, urls, mode, body=None):
         def req(url):
-                if mode == 'get':
-                    res = requests.get(url, stream=True)
-                if mode == 'post':
-                    res = requests.post(url, stream=True, data=body)
+                try:
+                    if mode == 'get':
+                        res = requests.get(url, stream=True)
+                    if mode == 'post':
+                        res = requests.post(url, stream=True, data=body)
+                except:
+                    logging.error('could not make request')
                 self._mode.append(mode)
                 self._responses.append(res.content)
                 self._endpoints.append(url)
@@ -84,7 +88,7 @@ class apisim:
                 else: 
                     self._outcome.append("Succes")
                 if self.print_steps:
-                    print(str(self._calls) + "'" + self.commands + "'" + ' on endpoint ' + url)
+                    logging.info(str(self._calls) + "'" + self.commands + "'" + ' on endpoint ' + url)
       
         threads = []
 
@@ -119,6 +123,7 @@ class apisim:
 
             except TypeError:
                 print("file does not exist")
+                return
         if mode == "post":
             try:
                 with open(input_file, "r") as reader:
@@ -127,17 +132,18 @@ class apisim:
                     self.multi_request(url, mode, body=data_to_push)
 
             except TypeError:
-                print("file does not exist")
-
-
+                logging.error("file does not exist")
+                return
 
     def print_responses(self):
-        self._tables = pd.DataFrame(
+        try:
+            self._tables = pd.DataFrame(
                 list(zip(self._endpoints, self._responses, self._elapsed_time, self._mode, self._status, self._outcome)))
-        self._tables.columns = ["endpoint", "value", "time", "mode", "status", "outcome"]
-        print("\n")
-        print(tabulate(self._tables, headers='keys', tablefmt='psql'))
-        #return
+            self._tables.columns = ["endpoint", "value", "time", "mode", "status", "outcome"]
+            print("\n")
+            print(tabulate(self._tables, headers='keys', tablefmt='psql'))
+        except ValueError:
+            print("No data")
 
     def call(self, mode, urls=None, command=None ,input_file=None):
         if command == None:
