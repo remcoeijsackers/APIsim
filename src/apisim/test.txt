@@ -1,2 +1,0 @@
-https://api.agify.io?name=henk
-https://api.agify.io?name=ipo
