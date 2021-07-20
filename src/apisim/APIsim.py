@@ -70,7 +70,7 @@ class apisim:
                 if mode == 'get':
                     res = requests.get(url, stream=True)
                 if mode == 'post':
-                    res = requests.post(url, stream=True)
+                    res = requests.post(url, stream=True, data=body)
                 self._mode.append(mode)
                 self._responses.append(res.content)
                 self._endpoints.append(url)
@@ -107,18 +107,27 @@ class apisim:
         if command == "key":
             pass
     
-    def from_file(self, input_file, mode):
+    def from_file(self, input_file, mode, url=None):
         urls_to_call = []
-        try:
-            with open(input_file, "r") as reader:
-                for line in reader.readlines():
-                    urls_to_call.append(line)
-                    print(line)
-                print(urls_to_call)
-                self.multi_request(urls_to_call, mode)
+        data_to_push = []
+        if mode == "get":
+            try:
+                with open(input_file, "r") as reader:
+                    for line in reader.readlines():
+                        urls_to_call.append(line)
+                    self.multi_request(urls_to_call, mode)
 
-        except TypeError:
-            print("file does not excist")
+            except TypeError:
+                print("file does not exist")
+        if mode == "post":
+            try:
+                with open(input_file, "r") as reader:
+                    for line in reader.readlines():
+                        data_to_push.append(line)
+                    self.multi_request(url, mode, body=data_to_push)
+
+            except TypeError:
+                print("file does not exist")
 
 
 
@@ -137,6 +146,8 @@ class apisim:
             return self.multi_safe_request(urls, mode)
         if command == "file":
             return self.from_file(input_file, mode)
+        if command == "filepost":
+            return self.from_file(input_file, mode, body=)
 
 
 
