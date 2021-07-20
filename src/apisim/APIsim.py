@@ -13,7 +13,7 @@ from tabulate import tabulate
 from multiprocessing.pool import ThreadPool
 
 class apisim:
-    def __init__(self, endpoints, commands=None, body=None, loop=False, repeat=0, sleeptime=0, print_steps=False, verbose=False, fallback_enabled=True) -> None:
+    def __init__(self, endpoints=None, commands=None, body=None, loop=False, repeat=0, sleeptime=0, print_steps=False, verbose=False, fallback_enabled=True) -> None:
         super().__init__()
         self.endpoints = endpoints
         self.commands = commands
@@ -37,10 +37,10 @@ class apisim:
         self._token = any
         self._calls = 0
 
-    def multi_safe_request(self, url):
+    def multi_safe_request(self, url, mode):
         if self.print_steps:
             self._calls += 1
-            print(str(self._calls) + " Safe "+ self.commands + ' on endpoint ' + url)
+            print(str(self._calls) + " Safe "+ mode + ' on endpoint ' + url)
 
         with TorRequests() as tor_requests:
             with tor_requests.get_session(retries=3) as sess:
@@ -61,18 +61,17 @@ class apisim:
                 pool.close()
                 pool.join()
         self._endpoints.append(url)
-        self._mode.append(self.commands)
+        self._mode.append(mode)
         self._outcome.append("Success (Tor)")
   
 
-    def multi_request(self):
-        time.sleep(self.sleeptime)
+    def multi_request(self, urls, mode, body=None):
         def req(url):
-                if self.commands == 'get':
+                if mode == 'get':
                     res = requests.get(url, stream=True)
-                if self.commands == 'post':
+                if mode == 'post':
                     res = requests.post(url, stream=True)
-                self._mode.append(self.commands)
+                self._mode.append(mode)
                 self._responses.append(res.content)
                 self._endpoints.append(url)
                 self._elapsed_time.append(res.elapsed.total_seconds())
@@ -81,7 +80,7 @@ class apisim:
                 if res.status_code == 429:
                     self._outcome.append("Failed")
                     if self.fallback_enabled:
-                            self.multi_safe_request(url)
+                            self.multi_safe_request(url, mode)
                 else: 
                     self._outcome.append("Succes")
                 if self.print_steps:
@@ -90,14 +89,13 @@ class apisim:
         threads = []
 
         with ThreadPoolExecutor(max_workers=50) as executor:
-            for url in self.endpoints:
+            for url in urls:
                 if self.print_steps:
                     for repeat in tqdm.tqdm(range(self.repeat)):
                         threads.append(executor.submit(req, url))
                 else:
                     for repeat in range(self.repeat):
                         threads.append(executor.submit(req, url))
-
 
     def login(self, url, username, password, command=None):
         if command == None:
@@ -108,6 +106,21 @@ class apisim:
             self._password = password
         if command == "key":
             pass
+    
+    def from_file(self, input_file, mode):
+        urls_to_call = []
+        try:
+            with open(input_file, "r") as reader:
+                for line in reader.readlines():
+                    urls_to_call.append(line)
+                    print(line)
+                print(urls_to_call)
+                self.multi_request(urls_to_call, mode)
+
+        except TypeError:
+            print("file does not excist")
+
+
 
     def print_responses(self):
         self._tables = pd.DataFrame(
@@ -117,11 +130,13 @@ class apisim:
         print(tabulate(self._tables, headers='keys', tablefmt='psql'))
         #return
 
-    def call(self, command=None):
+    def call(self, mode, urls=None, command=None ,input_file=None):
         if command == None:
-            return self.multi_request()
+            return self.multi_request(urls, mode)
         if command == "safe":
-            return self.multi_safe_request()
+            return self.multi_safe_request(urls, mode)
+        if command == "file":
+            return self.from_file(input_file, mode)
 
 
 
