@@ -1,7 +1,7 @@
 # APIsim
 
 ## Installation
-
+Api testing and automation
 ### pypi
 `pip install APIsim`
 
