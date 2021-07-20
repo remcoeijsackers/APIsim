@@ -63,7 +63,7 @@ if args.url:
            repeat=args.repeat, 
            sleeptime=args.delay, 
            print_steps=args.printsteps,
-           fallback_enabled=False)
+           fallback_enabled=True)
    if args.fallback:
       u.fallback_enabled = True
    u.call()

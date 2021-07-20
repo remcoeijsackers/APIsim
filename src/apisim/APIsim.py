@@ -13,7 +13,7 @@ from tabulate import tabulate
 from multiprocessing.pool import ThreadPool
 
 class apisim:
-    def __init__(self, endpoints, commands=None, body=None, loop=False, repeat=0, sleeptime=0, print_steps=False, verbose=False, _backup_mode="single", fallback_enabled=True) -> None:
+    def __init__(self, endpoints, commands=None, body=None, loop=False, repeat=0, sleeptime=0, print_steps=False, verbose=False, fallback_enabled=True) -> None:
         super().__init__()
         self.endpoints = endpoints
         self.commands = commands
@@ -29,7 +29,6 @@ class apisim:
         self._mode = []
         self._status = []
         self._outcome = []
-        self._backup_mode = _backup_mode
         self.fallback_enabled = fallback_enabled
         self._tables = any
         self._login = any
@@ -83,6 +82,8 @@ class apisim:
                     self._outcome.append("Failed")
                     if self.fallback_enabled:
                             self.multi_safe_request(url)
+                else: 
+                    self._outcome.append("Succes")
                 if self.print_steps:
                     print(str(self._calls) + "'" + self.commands + "'" + ' on endpoint ' + url)
       
@@ -119,8 +120,8 @@ class apisim:
     def call(self, command=None):
         if command == None:
             return self.multi_request()
-        if command == "login":
-            return self.login()
+        if command == "safe":
+            return self.multi_safe_request()
 
 
 
