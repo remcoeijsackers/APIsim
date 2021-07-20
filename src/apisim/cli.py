@@ -39,6 +39,7 @@ parser.add_argument('--file',
                        default=""
                     )
 
+
 parser.add_argument('--printsteps',
                         '-ps', 
                        type=bool,
@@ -56,16 +57,26 @@ parser.add_argument("-v", "--verbose", action="store_true",
 
 args = parser.parse_args()
 
-if args.url:
-   url_list = args.url
-   u = apisim(endpoints=url_list,
-           commands=(args.command),
+u = apisim(
            repeat=args.repeat, 
            sleeptime=args.delay, 
            print_steps=args.printsteps,
            fallback_enabled=True)
-   if args.fallback:
-      u.fallback_enabled = True
-   u.call()
-   if args.verbose:
-      u.print_responses()
+
+if args.fallback:
+   u.fallback_enabled = True
+
+if args.url:
+   url_list = args.url
+   u.call(urls=url_list, mode=(args.command))
+
+if args.file:
+   if args.command == "get":
+      u.call(command="file", mode=(args.command), input_file=args.file)
+   if args.command == "post":
+      u.call(command="file", mode=(args.command), urls=args.url, input_file=args.file)
+
+
+
+if args.verbose:
+   u.print_responses()
