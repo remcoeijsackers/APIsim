@@ -1,4 +1,3 @@
-from typing import Text
 import requests
 import json
 import time
@@ -7,29 +6,22 @@ import pandas as pd
 import requests
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from torpy.http.requests import TorRequests, tor_requests_session
+import sys
 
 from tqdm.cli import main
 from tabulate import tabulate
 from multiprocessing.pool import ThreadPool
-
-import logging
+from unit import request_unit, response_unit
 class apisim:
-    def __init__(self, endpoints=None, commands=None, body=None, loop=False, repeat=0, sleeptime=0, print_steps=False, verbose=False, fallback_enabled=True) -> None:
+    def __init__(self,  loop=False, repeat=0, sleeptime=0, print_steps=False, verbose=False, fallback_enabled=True) -> None:
         super().__init__()
-        self.endpoints = endpoints
-        self.commands = commands
-        self.body = body
         self.loop = loop
         self.repeat = repeat
         self.print_steps = print_steps
         self.verbose = verbose
         self.sleeptime = int(sleeptime)
-        self._responses = []
-        self._endpoints = []
-        self._elapsed_time = []
         self._mode = []
-        self._status = []
-        self._outcome = []
+        self._units = []
         self.fallback_enabled = fallback_enabled
         self._tables = any
         self._login = any
@@ -38,68 +30,67 @@ class apisim:
         self._token = any
         self._calls = 0
 
-    def multi_safe_request(self, url, mode):
+    def multi_safe_request(self, req_unit):
+        
         if self.print_steps:
             self._calls += 1
-            logging.info(str(self._calls) + " Safe "+ mode + ' on endpoint ' + url)
+            print(str(self._calls) + " Safe "+ " '" + req_unit.mode + "'" + ' on endpoint ' + req_unit.url[0])
+
 
         with TorRequests() as tor_requests:
             with tor_requests.get_session(retries=3) as sess:
                 def process(url):
+                    status=""
                     try:
-                        res = sess.get(url, timeout=30)
-                        self._responses.append(res.text)
-                        self._elapsed_time.append(res.elapsed.total_seconds())
-                        self._status.append(res.status_code)
-                        return r.text
+                        res = sess.get(req_unit.url[0], timeout=30)
+                        status = "Succes (Tor)"
+                        return res.text
                     except BaseException:
-                        logging.error('get link %s error', url)
+                        status = "Failed (Tor)"
+                        print('get link %s error', req_unit.url[0])
+                    finally:
+                        response = response_unit(req_unit.url[0], res.content, req_unit.mode, res.elapsed.total_seconds(), res.status_code, status)
+                        self._units.append(response)
 
                 pool = ThreadPool(10)
                 for i, w in enumerate(pool._pool):
                     w.name = 'Worker{}'.format(i)
-                results = pool.map(process, [url])
+                results = pool.map(process, [req_unit.url[0]])
                 pool.close()
                 pool.join()
-        self._endpoints.append(url)
-        self._mode.append(mode)
-        self._outcome.append("Success (Tor)")
-  
+        
 
-    def multi_request(self, urls, mode, body=None):
-        def req(url):
-                try:
-                    if mode == 'get':
-                        res = requests.get(url, stream=True)
-                    if mode == 'post':
-                        res = requests.post(url, stream=True, data=body)
-                except:
-                    logging.error('could not make request')
-                self._mode.append(mode)
-                self._responses.append(res.content)
-                self._endpoints.append(url)
-                self._elapsed_time.append(res.elapsed.total_seconds())
-                self._status.append(res.status_code)
-                self._calls += 1
-                if res.status_code == 429:
-                    self._outcome.append("Failed")
-                    if self.fallback_enabled:
-                            self.multi_safe_request(url, mode)
-                else: 
-                    self._outcome.append("Succes")
-                if self.print_steps:
-                    logging.info(str(self._calls) + "'" + self.commands + "'" + ' on endpoint ' + url)
-      
+    def multi_request(self, req_unit):
+        
+        def req(req_unit):
+            status = ""
+            if req_unit.mode == 'get':
+                res = requests.get(req_unit.url[0], stream=True)
+            if req_unit.mode == 'post':
+                res = requests.post(req_unit.url[0], stream=True, data=req_unit.body[0])
+            if res.status_code != 200:
+                status = "Failed"
+                if self.fallback_enabled:
+                        self.multi_safe_request_2(req_unit)
+            else:
+                status = "Succes"
+            x = response_unit(req_unit.url[0],res.content, req_unit.mode, res.elapsed.total_seconds(), res.status_code, status)
+            self._calls += 1
+            if self.print_steps:
+                print(str(self._calls) + " '" + req_unit.mode + "'" + ' on endpoint ' + req_unit.url[0])
+            self._units.append(x)
+            
+
         threads = []
 
         with ThreadPoolExecutor(max_workers=50) as executor:
-            for url in urls:
+            for url in req_unit.url:
                 if self.print_steps:
                     for repeat in tqdm.tqdm(range(self.repeat)):
-                        threads.append(executor.submit(req, url))
+                        threads.append(executor.submit(req, req_unit))
                 else:
                     for repeat in range(self.repeat):
-                        threads.append(executor.submit(req, url))
+                        threads.append(executor.submit(req, req_unit))
 
     def login(self, url, username, password, command=None):
         if command == None:
@@ -119,7 +110,8 @@ class apisim:
                 with open(input_file, "r") as reader:
                     for line in reader.readlines():
                         urls_to_call.append(line)
-                    self.multi_request(urls_to_call, mode)
+                    x = request_unit(urls_to_call, mode)
+                    self.multi_request(x)
 
             except TypeError:
                 print("file does not exist")
@@ -132,24 +124,21 @@ class apisim:
                     self.multi_request(url, mode, body=data_to_push)
 
             except TypeError:
-                logging.error("file does not exist")
-                return
+                print("file does not exist")
 
     def print_responses(self):
-        try:
-            self._tables = pd.DataFrame(
-                list(zip(self._endpoints, self._responses, self._elapsed_time, self._mode, self._status, self._outcome)))
-            self._tables.columns = ["endpoint", "value", "time", "mode", "status", "outcome"]
-            print("\n")
-            print(tabulate(self._tables, headers='keys', tablefmt='psql'))
-        except ValueError:
-            print("No data")
+        self._tables = pd.DataFrame(self._units)
+        self._tables.columns = ["endpoint", "value", "time", "mode", "status", "outcome"]
+        print("\n")
+        print(tabulate(self._tables, headers='keys', tablefmt='psql'))
+
 
     def call(self, mode, urls=None, command=None ,input_file=None):
+        x = request_unit(urls, mode)
         if command == None:
-            return self.multi_request(urls, mode)
+            return self.multi_request_2(x)
         if command == "safe":
-            return self.multi_safe_request(urls, mode)
+            return self.multi_safe_request(x)
         if command == "file":
             if mode == "get":
                 return self.from_file(input_file, mode)

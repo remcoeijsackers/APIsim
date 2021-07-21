@@ -69,7 +69,7 @@ if args.fallback:
 if args.url:
    url_list = args.url
    u.call(urls=url_list, mode=(args.command))
-
+   
 if args.file:
    if args.command == "get":
       u.call(command="file", mode=(args.command), input_file=args.file)
