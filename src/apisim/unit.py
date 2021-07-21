@@ -15,3 +15,12 @@ class response_unit:
     status: str 
     outcome: str 
 
+@dataclass
+class auth_request_unit:
+    payload: dict 
+
+
+@dataclass 
+class token_unit:
+    token: str
+    url: str
