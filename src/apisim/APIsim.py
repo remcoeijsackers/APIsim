@@ -11,7 +11,7 @@ from torpy.http.requests import TorRequests, tor_requests_session
 from tqdm.cli import main
 from tabulate import tabulate
 from multiprocessing.pool import ThreadPool
-
+from unit import request_unit
 class apisim:
     def __init__(self, endpoints=None, commands=None, body=None, loop=False, repeat=0, sleeptime=0, print_steps=False, verbose=False, fallback_enabled=True) -> None:
         super().__init__()
@@ -85,6 +85,36 @@ class apisim:
                     self._outcome.append("Succes")
                 if self.print_steps:
                     print(str(self._calls) + "'" + self.commands + "'" + ' on endpoint ' + url)
+      
+        threads = []
+
+        with ThreadPoolExecutor(max_workers=50) as executor:
+            for url in urls:
+                if self.print_steps:
+                    for repeat in tqdm.tqdm(range(self.repeat)):
+                        threads.append(executor.submit(req, url))
+                else:
+                    for repeat in range(self.repeat):
+                        threads.append(executor.submit(req, url))
+
+    def multi_request_2(self, urls, mode, body=None):
+        def req(url):
+                if mode == 'get':
+                    res = requests.get(url, stream=True)
+                if mode == 'post':
+                    res = requests.post(url, stream=True, data=body)
+                x = request_unit(url, mode, res.elapsed.total_seconds(), res.status_code)
+                self._calls += 1
+                if res.status_code == 429:
+                    x.outcome("Failed")
+                    if self.fallback_enabled:
+                            self.multi_safe_request(url, mode)
+                else: 
+                    x.outcome("Succes")
+                if self.print_steps:
+                    print(str(self._calls) + "'" + self.commands + "'" + ' on endpoint ' + url)
+                logging.info(x)
+                return x
       
         threads = []
 
