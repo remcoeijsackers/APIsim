@@ -5,7 +5,13 @@ from typing import Any
 class request_unit:
     url: str
     mode: str
-    time: float
-    status: str
-    outcome: Any = None
-    body: Any = None
+
+@dataclass 
+class response_unit:
+    url: str
+    value: str
+    mode: str
+    time: float  
+    status: str 
+    outcome: str 
+
