@@ -11,7 +11,7 @@ import sys
 from tqdm.cli import main
 from tabulate import tabulate
 from multiprocessing.pool import ThreadPool
-from unit import request_unit, response_unit
+from unit import request_unit, response_unit, auth_request_unit, token_unit
 class apisim:
     def __init__(self,  loop=False, repeat=0, sleeptime=0, print_steps=False, verbose=False, fallback_enabled=True) -> None:
         super().__init__()
@@ -24,10 +24,7 @@ class apisim:
         self._units = []
         self.fallback_enabled = fallback_enabled
         self._tables = any
-        self._login = any
-        self._password = any
-        self._auth = any
-        self._token = any
+        self._token = []
         self._calls = 0
 
     def multi_safe_request(self, req_unit):
@@ -42,7 +39,11 @@ class apisim:
                 def process(url):
                     status=""
                     try:
-                        res = sess.get(req_unit.url[0], timeout=30)
+                        if self._token != []:
+                            headers = {'Authorization': 'access_token %s'.format(self._token.token)}
+                        else: 
+                            headers = None
+                        res = sess.get(req_unit.url[0], headers=headers, timeout=30)
                         status = "Succes (Tor)"
                         return res.text
                     except BaseException:
@@ -64,17 +65,22 @@ class apisim:
         
         def req(req_unit):
             status = ""
+            if self._token != []:
+                headers = {'Authorization': 'access_token %s'.format(self._token.token)}
+            else: 
+                headers = None
             if req_unit.mode == 'get':
-                res = requests.get(req_unit.url[0], stream=True)
+                res = requests.get(req_unit.url[0], stream=True, headers=headers)
             if req_unit.mode == 'post':
-                res = requests.post(req_unit.url[0], stream=True, data=req_unit.body[0])
+                res = requests.post(req_unit.url[0], stream=True, data=req_unit.body[0], headers=headers)
             if res.status_code != 200:
                 status = "Failed"
                 if self.fallback_enabled:
-                        self.multi_safe_request_2(req_unit)
+                        self.multi_safe_request(req_unit)
             else:
                 status = "Succes"
             x = response_unit(req_unit.url[0],res.content, req_unit.mode, res.elapsed.total_seconds(), res.status_code, status)
+            print(x)
             self._calls += 1
             if self.print_steps:
                 print(str(self._calls) + " '" + req_unit.mode + "'" + ' on endpoint ' + req_unit.url[0])
@@ -92,15 +98,15 @@ class apisim:
                     for repeat in range(self.repeat):
                         threads.append(executor.submit(req, req_unit))
 
-    def login(self, url, username, password, command=None):
+    def login(self, req_unit, auth_unit, command=None):
         if command == None:
-            data = '{%s,%s}'.format(username, password)
-            self._token = requests.get(url, data=data)
-        if command == "account":
-            self._login = username
-            self._password = password
-        if command == "key":
-            pass
+            response = requests.post(req_unit.url[0], data = auth_unit.payload)
+            jstoken = json.loads(response.text)
+            token = token_unit(jstoken['access'], req_unit.url[0])
+            self._token = token
+            print(self._token.token)
+            return token
+
     
     def from_file(self, input_file, mode, url=None):
         urls_to_call = []
@@ -132,11 +138,20 @@ class apisim:
         print("\n")
         print(tabulate(self._tables, headers='keys', tablefmt='psql'))
 
+    def check_login(self, req_unit, auth_unit):
+        if self._token == []:
+            return self.login(req_unit, auth_unit)
 
-    def call(self, mode, urls=None, command=None ,input_file=None):
+
+    def call(self, mode, urls=None, command=None ,input_file=None, password=None, username=None):
         x = request_unit(urls, mode)
+        y = auth_request_unit({"username": username, "password": password})
         if command == None:
-            return self.multi_request_2(x)
+            print(x)
+            return self.multi_request(x)
+        if command == "login":
+            print('in login')
+            return self.login(x, y)
         if command == "safe":
             return self.multi_safe_request(x)
         if command == "file":
@@ -144,6 +159,8 @@ class apisim:
                 return self.from_file(input_file, mode)
             if mode == "post":
                 return self.from_file(input_file, mode, url=urls)
+
+
 
 
 

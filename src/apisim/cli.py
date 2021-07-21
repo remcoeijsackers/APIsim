@@ -11,6 +11,12 @@ parser.add_argument('--url',
                        help='the api url to call',
                        nargs='*'
                     )
+parser.add_argument('--creds',
+                       type=str,
+                       help='credentials to get a token',
+                       nargs='+'
+                    )
+
 parser.add_argument('--repeat',
                         '-r', 
                        type=int,
@@ -22,8 +28,8 @@ parser.add_argument('--command',
                         '-c', 
                        type=str,
                        help='Type of request',
-                       default="get"
                     )
+
 
 parser.add_argument('--delay',
                         '-d', 
@@ -42,9 +48,8 @@ parser.add_argument('--file',
 
 parser.add_argument('--printsteps',
                         '-ps', 
-                       type=bool,
                        help='print the api calling steps',
-                       default=False
+                       action="store_true"
                     )
 parser.add_argument('--fallback',
                         '-fb', 
@@ -56,19 +61,27 @@ parser.add_argument("-v", "--verbose", action="store_true",
                     help="increase output verbosity")
 
 args = parser.parse_args()
-
+ps = False
+if args.printsteps:
+   ps = True
 u = apisim(
            repeat=args.repeat, 
            sleeptime=args.delay, 
-           print_steps=args.printsteps,
+           print_steps=ps,
            fallback_enabled=True)
-
+   
 if args.fallback:
    u.fallback_enabled = True
 
 if args.url:
    url_list = args.url
+
+if args.command == "login":
+   u.call(command="login", urls=url_list, mode="post", username=args.creds[0], password=args.creds[1])
+
+if args.command == "get":
    u.call(urls=url_list, mode=(args.command))
+
    
 if args.file:
    if args.command == "get":
