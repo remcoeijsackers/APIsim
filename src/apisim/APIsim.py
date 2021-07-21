@@ -115,6 +115,7 @@ class apisim:
 
             except TypeError:
                 print("file does not exist")
+                return
         if mode == "post":
             try:
                 with open(input_file, "r") as reader:
