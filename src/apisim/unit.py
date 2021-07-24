@@ -1,19 +1,6 @@
 from dataclasses import dataclass
-from typing import Any, Optional
-
-@dataclass
-class request_unit:
-    url: str
-    mode: str
-
-@dataclass 
-class response_unit:
-    url: str
-    value: str
-    mode: str
-    time: float  
-    status: str 
-    outcome: str 
+from typing import Any, Optional, List
+from pydantic import BaseModel
 
 @dataclass
 class auth_request_unit:
@@ -24,3 +11,20 @@ class auth_request_unit:
 class token_unit:
     token: str
     url: str
+
+@dataclass
+class request_unit(BaseModel):
+    url: str
+    mode: str
+    auth: Optional[auth_request_unit]
+    token: Optional[token_unit]
+
+@dataclass 
+class response_unit:
+    url: str
+    value: str
+    mode: str
+    time: float  
+    status: str 
+    outcome: str 
+

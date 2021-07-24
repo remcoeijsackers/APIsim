@@ -1,102 +1,18 @@
 import requests
 import json
-import time
-import tqdm
 import pandas as pd
-import requests
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from torpy.http.requests import TorRequests, tor_requests_session
-import sys
-
-from tqdm.cli import main
 from tabulate import tabulate
-from multiprocessing.pool import ThreadPool
-from unit import request_unit, response_unit, auth_request_unit, token_unit
+from unit import request_unit, auth_request_unit, token_unit
 class apisim:
-    def __init__(self,  loop=False, repeat=0, sleeptime=0, print_steps=False, verbose=False, fallback_enabled=True) -> None:
+    def __init__(self,  loop=False, verbose=False) -> None:
         super().__init__()
         self.loop = loop
-        self.repeat = repeat
-        self.print_steps = print_steps
         self.verbose = verbose
-        self.sleeptime = int(sleeptime)
         self._mode = []
         self._units = []
-        self.fallback_enabled = fallback_enabled
         self._tables = any
         self._token = []
         self._calls = 0
-
-    def multi_safe_request(self, req_unit):
-        
-        if self.print_steps:
-            self._calls += 1
-            print(str(self._calls) + " Safe "+ " '" + req_unit.mode + "'" + ' on endpoint ' + req_unit.url[0])
-
-
-        with TorRequests() as tor_requests:
-            with tor_requests.get_session(retries=3) as sess:
-                def process(url):
-                    status=""
-                    try:
-                        if self._token != []:
-                            headers = {'Authorization': 'access_token %s'.format(self._token.token)}
-                        else: 
-                            headers = None
-                        res = sess.get(req_unit.url[0], headers=headers, timeout=30)
-                        status = "Succes (Tor)"
-                        return res.text
-                    except BaseException:
-                        status = "Failed (Tor)"
-                        print('get link %s error', req_unit.url[0])
-                    finally:
-                        response = response_unit(req_unit.url[0], res.content, req_unit.mode, res.elapsed.total_seconds(), res.status_code, status)
-                        self._units.append(response)
-
-                pool = ThreadPool(10)
-                for i, w in enumerate(pool._pool):
-                    w.name = 'Worker{}'.format(i)
-                results = pool.map(process, [req_unit.url[0]])
-                pool.close()
-                pool.join()
-        
-
-    def multi_request(self, req_unit):
-        
-        def req(req_unit):
-            status = ""
-            if self._token != []:
-                headers = {'Authorization': 'access_token %s'.format(self._token.token)}
-            else: 
-                headers = None
-            if req_unit.mode == 'get':
-                res = requests.get(req_unit.url[0], stream=True, headers=headers)
-            if req_unit.mode == 'post':
-                res = requests.post(req_unit.url[0], stream=True, data=req_unit.body[0], headers=headers)
-            if res.status_code != 200:
-                status = "Failed"
-                if self.fallback_enabled:
-                        self.multi_safe_request(req_unit)
-            else:
-                status = "Succes"
-            x = response_unit(req_unit.url[0],res.content, req_unit.mode, res.elapsed.total_seconds(), res.status_code, status)
-            print(x)
-            self._calls += 1
-            if self.print_steps:
-                print(str(self._calls) + " '" + req_unit.mode + "'" + ' on endpoint ' + req_unit.url[0])
-            self._units.append(x)
-            
-
-        threads = []
-
-        with ThreadPoolExecutor(max_workers=50) as executor:
-            for url in req_unit.url:
-                if self.print_steps:
-                    for repeat in tqdm.tqdm(range(self.repeat)):
-                        threads.append(executor.submit(req, req_unit))
-                else:
-                    for repeat in range(self.repeat):
-                        threads.append(executor.submit(req, req_unit))
 
     def login(self, req_unit, auth_unit, command=None):
         if command == None:
@@ -107,7 +23,6 @@ class apisim:
             print(self._token.token)
             return token
 
-    
     def from_file(self, input_file, mode, url=None):
         urls_to_call = []
         data_to_push = []
@@ -141,7 +56,6 @@ class apisim:
     def check_login(self, req_unit, auth_unit):
         if self._token == []:
             return self.login(req_unit, auth_unit)
-
 
     def call(self, mode, urls=None, command=None ,input_file=None, password=None, username=None):
         x = request_unit(urls, mode)

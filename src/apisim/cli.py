@@ -66,7 +66,6 @@ if args.printsteps:
    ps = True
 u = apisim(
            repeat=args.repeat, 
-           sleeptime=args.delay, 
            print_steps=ps,
            fallback_enabled=True)
    
