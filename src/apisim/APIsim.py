@@ -1,159 +1,54 @@
+from typing import List
 import requests
 import json
-import time
-import tqdm
 import pandas as pd
-import requests
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from torpy.http.requests import TorRequests, tor_requests_session
-import sys
-
-from tqdm.cli import main
 from tabulate import tabulate
-from multiprocessing.pool import ThreadPool
-from unit import request_unit, response_unit, auth_request_unit, token_unit
+import argparse
+
+from unit import request_unit, auth_request_unit, token_unit
+from customrequests import customrequest
+
+
 class apisim:
-    def __init__(self,  loop=False, repeat=0, sleeptime=0, print_steps=False, verbose=False, fallback_enabled=True) -> None:
+    def __init__(self,  loop=False, verbose=False, repeat=0, print_steps=True) -> None:
         super().__init__()
         self.loop = loop
+        self.verbose = verbose
         self.repeat = repeat
         self.print_steps = print_steps
-        self.verbose = verbose
-        self.sleeptime = int(sleeptime)
-        self._mode = []
-        self._units = []
-        self.fallback_enabled = fallback_enabled
-        self._tables = any
-        self._token = []
-        self._calls = 0
+        self._req_unit = request_unit
 
-    def multi_safe_request(self, req_unit):
-        
-        if self.print_steps:
-            self._calls += 1
-            print(str(self._calls) + " Safe "+ " '" + req_unit.mode + "'" + ' on endpoint ' + req_unit.url[0])
+    def data_from_file(self, input_file, mode, url=None):
+        pass
 
+    def requests_from_file(self):
+        pass
 
-        with TorRequests() as tor_requests:
-            with tor_requests.get_session(retries=3) as sess:
-                def process(url):
-                    status=""
-                    try:
-                        if self._token != []:
-                            headers = {'Authorization': 'access_token %s'.format(self._token.token)}
-                        else: 
-                            headers = None
-                        res = sess.get(req_unit.url[0], headers=headers, timeout=30)
-                        status = "Succes (Tor)"
-                        return res.text
-                    except BaseException:
-                        status = "Failed (Tor)"
-                        print('get link %s error', req_unit.url[0])
-                    finally:
-                        response = response_unit(req_unit.url[0], res.content, req_unit.mode, res.elapsed.total_seconds(), res.status_code, status)
-                        self._units.append(response)
-
-                pool = ThreadPool(10)
-                for i, w in enumerate(pool._pool):
-                    w.name = 'Worker{}'.format(i)
-                results = pool.map(process, [req_unit.url[0]])
-                pool.close()
-                pool.join()
-        
-
-    def multi_request(self, req_unit):
-        
-        def req(req_unit):
-            status = ""
-            if self._token != []:
-                headers = {'Authorization': 'access_token %s'.format(self._token.token)}
-            else: 
-                headers = None
-            if req_unit.mode == 'get':
-                res = requests.get(req_unit.url[0], stream=True, headers=headers)
-            if req_unit.mode == 'post':
-                res = requests.post(req_unit.url[0], stream=True, data=req_unit.body[0], headers=headers)
-            if res.status_code != 200:
-                status = "Failed"
-                if self.fallback_enabled:
-                        self.multi_safe_request(req_unit)
-            else:
-                status = "Succes"
-            x = response_unit(req_unit.url[0],res.content, req_unit.mode, res.elapsed.total_seconds(), res.status_code, status)
-            print(x)
-            self._calls += 1
-            if self.print_steps:
-                print(str(self._calls) + " '" + req_unit.mode + "'" + ' on endpoint ' + req_unit.url[0])
-            self._units.append(x)
-            
-
-        threads = []
-
-        with ThreadPoolExecutor(max_workers=50) as executor:
-            for url in req_unit.url:
-                if self.print_steps:
-                    for repeat in tqdm.tqdm(range(self.repeat)):
-                        threads.append(executor.submit(req, req_unit))
-                else:
-                    for repeat in range(self.repeat):
-                        threads.append(executor.submit(req, req_unit))
-
-    def login(self, req_unit, auth_unit, command=None):
-        if command == None:
-            response = requests.post(req_unit.url[0], data = auth_unit.payload)
-            jstoken = json.loads(response.text)
-            token = token_unit(jstoken['access'], req_unit.url[0])
-            self._token = token
-            print(self._token.token)
-            return token
-
-    
-    def from_file(self, input_file, mode, url=None):
-        urls_to_call = []
-        data_to_push = []
-        if mode == "get":
-            try:
-                with open(input_file, "r") as reader:
-                    for line in reader.readlines():
-                        urls_to_call.append(line)
-                    x = request_unit(urls_to_call, mode)
-                    self.multi_request(x)
-
-            except TypeError:
-                print("file does not exist")
-                return
-        if mode == "post":
-            try:
-                with open(input_file, "r") as reader:
-                    for line in reader.readlines():
-                        data_to_push.append(line)
-                    self.multi_request(url, mode, body=data_to_push)
-
-            except TypeError:
-                print("file does not exist")
-
-    def print_responses(self):
-        self._tables = pd.DataFrame(self._units)
-        self._tables.columns = ["endpoint", "value", "time", "mode", "status", "outcome"]
+    def _print_responses(self, resp_list: List):
+        tables = pd.DataFrame(resp_list)
+        tables.columns = ["endpoint", "value",
+                          "time", "mode", "status", "outcome"]
         print("\n")
-        print(tabulate(self._tables, headers='keys', tablefmt='psql'))
+        print(tabulate(tables, headers='keys', tablefmt='psql'))
 
-    def check_login(self, req_unit, auth_unit):
-        if self._token == []:
-            return self.login(req_unit, auth_unit)
+    def call(self, mode, urls=None, command=None, input_file=None, password=None, username=None, repeat=1, loginurl=None):
+        self._req_unit = request_unit(urls, mode)
+        req = customrequest(repeat=repeat)
+        if username and password:
+            self._req_unit = request_unit(
+                urls, mode, {"username": username, "password": password}, auth_url=loginurl[0])
 
-
-    def call(self, mode, urls=None, command=None ,input_file=None, password=None, username=None):
-        x = request_unit(urls, mode)
-        y = auth_request_unit({"username": username, "password": password})
+        if command == "login" and username and password:
+            self._req_unit = req.login(self._req_unit)
+            print(self._req_unit)
+            return self._req_unit
         if command == None:
-            print(x)
-            return self.multi_request(x)
-        if command == "login":
-            print('in login')
-            return self.login(x, y)
+            print(self._req_unit)
+            req.multi_request(req_unit=self._req_unit)
+            self._print_responses(req.return_responses())
+
         if command == "safe":
-            return self.multi_safe_request(x)
+            return req.multi_safe_request(self._req_unit)
         if command == "file":
             if mode == "get":
                 return self.from_file(input_file, mode)
@@ -161,8 +56,96 @@ class apisim:
                 return self.from_file(input_file, mode, url=urls)
 
 
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(prog='APIsim',
+                                     usage='%(prog)s [options] url(s)',
+                                     description='Simulate users calling an api')
 
+    parser.add_argument('--url',
+                        type=str,
+                        help='the api url to call',
+                        nargs='*'
+                        )
+    parser.add_argument('--creds',
+                        type=str,
+                        help='credentials to get a token',
+                        nargs='+'
+                        )
+    parser.add_argument('--authurl',
+                        type=str,
+                        help='url to get a token',
+                        nargs=1
+                        )
 
+    parser.add_argument('--repeat',
+                        '-r',
+                        type=int,
+                        help='times to repeat the call',
+                        default=1
+                        )
 
+    parser.add_argument('--command',
+                        '-c',
+                        type=str,
+                        help='Type of request',
+                        )
 
+    parser.add_argument('--delay',
+                        '-d',
+                        type=int,
+                        help='seconds delay between repeats',
+                        default=0
+                        )
 
+    parser.add_argument('--file',
+                        '-f',
+                        type=str,
+                        help='input file to get data',
+                        default=""
+                        )
+
+    parser.add_argument('--printsteps',
+                        '-ps',
+                        help='print the api calling steps',
+                        action="store_true"
+                        )
+    parser.add_argument('--fallback',
+                        '-fb',
+                        action="store_true",
+                        help='fallback to tor if fails'
+                        )
+
+    parser.add_argument("-v", "--verbose", action="store_true",
+                        help="increase output verbosity")
+
+    args = parser.parse_args()
+    ps = False
+    if args.printsteps:
+        ps = True
+    u = apisim(
+        repeat=args.repeat,
+        print_steps=ps)
+
+    if args.fallback:
+        u.fallback_enabled = True
+
+    if args.url:
+        url_list = args.url
+
+    if args.command == "login":
+        u.call(command="login", urls=url_list, mode="post",
+               username=args.creds[0], password=args.creds[1])
+
+    if args.command == "get":
+        if args.creds:
+            u.call(urls=url_list, mode="get", loginurl=args.authurl,
+                   username=args.creds[0], password=args.creds[1])
+        else:
+            u.call(urls=url_list, mode=(args.command), repeat=args.repeat)
+
+    if args.file:
+        if args.command == "get":
+            u.call(command="file", mode=(args.command), input_file=args.file)
+        if args.command == "post":
+            u.call(command="file", mode=(args.command),
+                   urls=args.url, input_file=args.file)
