@@ -18,6 +18,7 @@ class customrequest:
         self.repeat = repeat
         self.print_steps = print_steps
         self._calls = 0
+        self._token = ""  # TODO: This needs to be handled on a per request_unit instance
 
     def return_responses(self):
         return self._units
@@ -40,7 +41,11 @@ class customrequest:
                             headers = None
                         res = sess.get(
                             req_unit.url[0], headers=headers, timeout=30)
-                        status = "Succes (Tor)"
+
+                        if res.status_code != 200:
+                            status = "Failed (Tor)"
+                        else:
+                            status = "Succes (Tor)"
                         return res.text
                     except BaseException:
                         status = "Failed (Tor)"
@@ -58,12 +63,17 @@ class customrequest:
                 pool.join()
 
     def multi_request(self, req_unit: request_unit):
+        if req_unit.auth:
+            req_unit = self.login(req_unit)
+        print('in multi')
+        print(req_unit)
 
         def req(req_unit):
             status = ""
             if req_unit.token:
                 headers = {
-                    'Authorization': 'access_token %s'.format(req_unit.token)}
+                    'Authorization': 'Bearer {}'.format(req_unit.token)}
+                print(headers)
             else:
                 headers = None
             if req_unit.mode == 'get':
@@ -98,11 +108,11 @@ class customrequest:
             for unit in self._failed_requests:
                 self.multi_safe_request(unit)
 
-    def login(self, req_unit, auth_unit):
-        response = requests.post(req_unit.url[0], data=auth_unit.payload)
+    def login(self, req_unit: request_unit):
+        response = requests.post(req_unit.auth_url, data=req_unit.auth)
         jstoken = json.loads(response.text)
-        token = token_unit(jstoken['access'], req_unit.url[0])
-        return token
+        req_unit.token = jstoken['access']
+        return req_unit
 
     def check_login(self, req_unit: request_unit):
         if self._token == []:

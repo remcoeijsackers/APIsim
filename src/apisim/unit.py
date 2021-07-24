@@ -18,8 +18,9 @@ class token_unit:
 class request_unit:
     url: list
     mode: str
-    auth: str = None
+    auth: dict = None
     token: str = None
+    auth_url: str = None
 
 
 @dataclass

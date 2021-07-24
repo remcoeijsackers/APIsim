@@ -18,6 +18,8 @@ call 'get' on an endpoint, print each step
 call 'get' on multiple endpoints, print out the results in a table
 `apisim --url 'https://api.agify.io?name=apisim' 'https://api.agify.io?name=python' 'https://api.agify.io?name=rest' -r=100 -c=get -v`
 
+authenticate on a api, call 'get' on a endpoint, print out the results in a table
+`apisim --authurl 'https://api.test.io/api/token/'  --creds testaccount bot123 --command=get --url 'https://api.test.io/api/data/' -v`
 
 ## Capabilities
 

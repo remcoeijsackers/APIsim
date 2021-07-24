@@ -16,6 +16,7 @@ class apisim:
         self.verbose = verbose
         self.repeat = repeat
         self.print_steps = print_steps
+        self._req_unit = request_unit
 
     def data_from_file(self, input_file, mode, url=None):
         pass
@@ -30,17 +31,24 @@ class apisim:
         print("\n")
         print(tabulate(tables, headers='keys', tablefmt='psql'))
 
-    def call(self, mode, urls=None, command=None, input_file=None, password=None, username=None, repeat=None):
-        x = request_unit(urls, mode)
-        y = auth_request_unit({"username": username, "password": password})
+    def call(self, mode, urls=None, command=None, input_file=None, password=None, username=None, repeat=1, loginurl=None):
+        self._req_unit = request_unit(urls, mode)
         req = customrequest(repeat=repeat)
+        if username and password:
+            self._req_unit = request_unit(
+                urls, mode, {"username": username, "password": password}, auth_url=loginurl[0])
+
+        if command == "login" and username and password:
+            self._req_unit = req.login(self._req_unit)
+            print(self._req_unit)
+            return self._req_unit
         if command == None:
-            req.multi_request(req_unit=x)
+            print(self._req_unit)
+            req.multi_request(req_unit=self._req_unit)
             self._print_responses(req.return_responses())
-        if command == "login":
-            return req.login(x, y)
+
         if command == "safe":
-            return req.multi_safe_request(x)
+            return req.multi_safe_request(self._req_unit)
         if command == "file":
             if mode == "get":
                 return self.from_file(input_file, mode)
@@ -62,6 +70,11 @@ if __name__ == '__main__':
                         type=str,
                         help='credentials to get a token',
                         nargs='+'
+                        )
+    parser.add_argument('--authurl',
+                        type=str,
+                        help='url to get a token',
+                        nargs=1
                         )
 
     parser.add_argument('--repeat',
@@ -124,7 +137,11 @@ if __name__ == '__main__':
                username=args.creds[0], password=args.creds[1])
 
     if args.command == "get":
-        u.call(urls=url_list, mode=(args.command), repeat=args.repeat)
+        if args.creds:
+            u.call(urls=url_list, mode="get", loginurl=args.authurl,
+                   username=args.creds[0], password=args.creds[1])
+        else:
+            u.call(urls=url_list, mode=(args.command), repeat=args.repeat)
 
     if args.file:
         if args.command == "get":
