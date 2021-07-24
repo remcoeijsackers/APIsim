@@ -1,20 +1,16 @@
 from typing import List
-import requests
-import json
 import pandas as pd
 from tabulate import tabulate
 import argparse
 
-from unit import request_unit, auth_request_unit, token_unit
+from unit import request_unit
 from customrequests import customrequest
 
 
 class apisim:
-    def __init__(self,  loop=False, verbose=False, print_steps=False) -> None:
+    def __init__(self, verbose=False) -> None:
         super().__init__()
-        self.loop = loop
         self.verbose = verbose
-        self.print_steps = print_steps
         self._req_unit = request_unit
 
     def data_from_file(self, input_file, mode, url=None):
@@ -25,14 +21,15 @@ class apisim:
 
     def _print_responses(self, resp_list: List):
         tables = pd.DataFrame(resp_list)
-        tables.columns = ["endpoint", "value",
-                          "time", "mode", "status", "outcome"]
+        tables.columns = ["endpoint", "value", "mode",
+                          "time", "status", "outcome"]
         print("\n")
         print(tabulate(tables, headers='keys', tablefmt='psql'))
 
-    def call(self, mode, urls=None, command=None, input_file=None, password=None, username=None, repeat=1, loginurl=None):
+    def call(self, mode, urls=None, command=None, input_file=None, password=None, username=None, repeat=1, loginurl=None, print_steps=False, fallback=False):
         self._req_unit = request_unit(urls, mode)
-        req = customrequest(repeat=repeat)
+        req = customrequest(
+            repeat=repeat, print_steps=print_steps, fallback_enabled=fallback)
         if username and password:
             self._req_unit = request_unit(
                 urls, mode, {"username": username, "password": password}, auth_url=loginurl[0])
@@ -78,10 +75,15 @@ if __name__ == '__main__':
                         default=1
                         )
 
-    parser.add_argument('--command',
-                        '-c',
+    parser.add_argument('--mode',
+                        '-m',
                         type=str,
                         help='Type of request',
+                        )
+
+    parser.add_argument('--command',
+                        type=str,
+                        help='type of command',
                         )
 
     parser.add_argument('--delay',
@@ -114,34 +116,19 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    if args.printsteps:
-        ps = True
-    else:
-        ps = False
+    u = apisim()
 
-    if args.repeat:
-        repeat = args.repeat
-    else:
-        repeat = 1
-
-    u = apisim(print_steps=ps)
-
-    if args.fallback:
-        u.fallback_enabled = True
-
-    if args.url:
-        url_list = args.url
-
-    if args.command == "get":
+    if args.command == None:
         if args.creds:
-            u.call(urls=url_list, mode=(args.command), loginurl=args.authurl,
-                   username=args.creds[0], password=args.creds[1], repeat=repeat)
+            u.call(urls=args.url, mode=(args.mode), loginurl=args.authurl,
+                   username=args.creds[0], password=args.creds[1], repeat=args.repeat, print_steps=args.printsteps, fallback=args.fallback)
         else:
-            u.call(urls=url_list, mode=(args.command), repeat=repeat)
+            u.call(urls=args.url, mode=(args.mode),
+                   repeat=args.repeat, print_steps=args.printsteps, fallback=args.fallback)
 
     if args.file:
-        if args.command == "get":
-            u.call(command="file", mode=(args.command), input_file=args.file)
-        if args.command == "post":
-            u.call(command="file", mode=(args.command),
+        if args.mode == "get":
+            u.call(command="file", mode=(args.mode), input_file=args.file)
+        if args.mode == "post":
+            u.call(command="file", mode=(args.mode),
                    urls=args.url, input_file=args.file)
