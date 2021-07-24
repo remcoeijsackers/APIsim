@@ -10,11 +10,10 @@ from customrequests import customrequest
 
 
 class apisim:
-    def __init__(self,  loop=False, verbose=False, repeat=0, print_steps=True) -> None:
+    def __init__(self,  loop=False, verbose=False, print_steps=False) -> None:
         super().__init__()
         self.loop = loop
         self.verbose = verbose
-        self.repeat = repeat
         self.print_steps = print_steps
         self._req_unit = request_unit
 
@@ -38,12 +37,7 @@ class apisim:
             self._req_unit = request_unit(
                 urls, mode, {"username": username, "password": password}, auth_url=loginurl[0])
 
-        if command == "login" and username and password:
-            self._req_unit = req.login(self._req_unit)
-            print(self._req_unit)
-            return self._req_unit
         if command == None:
-            print(self._req_unit)
             req.multi_request(req_unit=self._req_unit)
             self._print_responses(req.return_responses())
 
@@ -119,12 +113,18 @@ if __name__ == '__main__':
                         help="increase output verbosity")
 
     args = parser.parse_args()
-    ps = False
+
     if args.printsteps:
         ps = True
-    u = apisim(
-        repeat=args.repeat,
-        print_steps=ps)
+    else:
+        ps = False
+
+    if args.repeat:
+        repeat = args.repeat
+    else:
+        repeat = 1
+
+    u = apisim(print_steps=ps)
 
     if args.fallback:
         u.fallback_enabled = True
@@ -132,16 +132,12 @@ if __name__ == '__main__':
     if args.url:
         url_list = args.url
 
-    if args.command == "login":
-        u.call(command="login", urls=url_list, mode="post",
-               username=args.creds[0], password=args.creds[1])
-
     if args.command == "get":
         if args.creds:
-            u.call(urls=url_list, mode="get", loginurl=args.authurl,
-                   username=args.creds[0], password=args.creds[1])
+            u.call(urls=url_list, mode=(args.command), loginurl=args.authurl,
+                   username=args.creds[0], password=args.creds[1], repeat=repeat)
         else:
-            u.call(urls=url_list, mode=(args.command), repeat=args.repeat)
+            u.call(urls=url_list, mode=(args.command), repeat=repeat)
 
     if args.file:
         if args.command == "get":
