@@ -30,10 +30,10 @@ class apisim:
         print("\n")
         print(tabulate(tables, headers='keys', tablefmt='psql'))
 
-    def call(self, mode, urls=None, command=None, input_file=None, password=None, username=None):
+    def call(self, mode, urls=None, command=None, input_file=None, password=None, username=None, repeat=None):
         x = request_unit(urls, mode)
         y = auth_request_unit({"username": username, "password": password})
-        req = customrequest()
+        req = customrequest(repeat=repeat)
         if command == None:
             req.multi_request(req_unit=x)
             self._print_responses(req.return_responses())
@@ -124,7 +124,7 @@ if __name__ == '__main__':
                username=args.creds[0], password=args.creds[1])
 
     if args.command == "get":
-        u.call(urls=url_list, mode=(args.command))
+        u.call(urls=url_list, mode=(args.command), repeat=args.repeat)
 
     if args.file:
         if args.command == "get":
