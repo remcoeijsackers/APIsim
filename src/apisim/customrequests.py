@@ -63,6 +63,10 @@ class customrequest:
                 pool.join()
 
     def multi_request(self, req_unit: request_unit):
+        """
+        Carries out the request(s) in a request unit.
+        Param: req_unit: a request unit class instance
+        """
         if req_unit.auth:
             req_unit = self.login(req_unit)
 

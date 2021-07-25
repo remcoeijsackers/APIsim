@@ -1,10 +1,10 @@
 from typing import List
 import pandas as pd
-from tabulate import tabulate
 import argparse
 
 from unit import request_unit
 from customrequests import customrequest
+from transformer import datatransformer
 
 
 class apisim:
@@ -20,11 +20,8 @@ class apisim:
         pass
 
     def _print_responses(self, resp_list: List):
-        tables = pd.DataFrame(resp_list)
-        tables.columns = ["endpoint", "value", "mode",
-                          "time", "status", "outcome"]
-        print("\n")
-        print(tabulate(tables, headers='keys', tablefmt='psql'))
+        trans = datatransformer()
+        print(trans.print_response_table(resp_list))
 
     def call(self, mode, urls=None, command=None, input_file=None, password=None, username=None, repeat=1, loginurl=None, print_steps=False, fallback=False):
         self._req_unit = request_unit(urls, mode)
@@ -36,6 +33,7 @@ class apisim:
 
         if command == None:
             req.multi_request(req_unit=self._req_unit)
+            # TODO: The response should always be returned, but printing out to a table should be an option
             self._print_responses(req.return_responses())
 
         if command == "safe":
