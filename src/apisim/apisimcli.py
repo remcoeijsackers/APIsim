@@ -1,6 +1,7 @@
 from rich.console import Console
 from rich.layout import Layout
 
+# NOTE: This file is for the 'REPL' option of the program
 console = Console()
 layout = Layout()
 
