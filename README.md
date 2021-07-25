@@ -1,12 +1,6 @@
 # APIsim
-<pre style="font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace"><span style="color: #000080; text-decoration-color: #000080">╔════════════════════════ </span><span style="color: #000080; text-decoration-color: #000080; font-weight: bold">apisim</span><span style="color: #000080; text-decoration-color: #000080"> ════════════════════════╗</span>         
-<span style="color: #000080; text-decoration-color: #000080">║</span> apisim allows users to easily schedule & handle large amounths of requests,<span style="color: #000080; text-decoration-color: #000080">║</span>
-<span style="color: #000080; text-decoration-color: #000080">║</span> and outputs usable data. <span style="color: #000080; text-decoration-color: #000080">║</span> 
-<span style="color: #000080; text-decoration-color: #000080">║</span>             <span style="color: #000080; text-decoration-color: #000080">║</span> 
-<span style="color: #000080; text-decoration-color: #000080">║</span>                                                          <span style="color: #000080; text-decoration-color: #000080">║</span> 
-<span style="color: #000080; text-decoration-color: #000080">║</span>                        <span style="color: #000080; text-decoration-color: #000080">║</span> 
-<span style="color: #000080; text-decoration-color: #000080">╚══════════════════════════════════════════════════════════╝</span> 
-
+apisim allows users to easily schedule & handle large amounths of requests,
+and outputs usable data. 
 ## Installation
 Api testing and automation
 ### pypi
