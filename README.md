@@ -2,7 +2,6 @@
 apisim allows users to easily schedule & handle large amounths of requests,
 and outputs usable data. 
 ## Installation
-Api testing and automation
 ### pypi
 `pip install APIsim`
 
