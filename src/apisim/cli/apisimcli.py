@@ -44,26 +44,26 @@ def make_layout() -> Layout:
         Layout(name="side"),
         Layout(name="body", ratio=2, minimum_size=60),
     )
-    layout["side"].split(Layout(name="box1"), Layout(name="box2"))
+    layout["side"].split(Layout(name="statusbox"), Layout(name="box2"))
     return layout
 
 
-def make_config_display(Mode, Endpoints, Urls) -> Panel:
+def make_config_display(mode, loop, urls) -> Panel:
     """Some example content."""
-    sponsor_message = Table.grid(padding=1)
-    sponsor_message.add_column(style="green", justify="right")
-    sponsor_message.add_column(no_wrap=True)
+    info = Table.grid(padding=1)
+    info.add_column(style="green", justify="right")
+    info.add_column(no_wrap=True)
 
-    sponsor_message.add_row(
+    info.add_row(
         "Mode",
-        "{}".format(Mode),
+        "{}".format(mode),
     )
-    sponsor_message.add_row(
-        "Endpoints",
-        "{}".format(Endpoints),
+    info.add_row(
+        "Loop",
+        "{}".format(loop),
     )
-    sponsor_message.add_row(
-        "Urls", "{}".format(Urls)
+    info.add_row(
+        "Urls", "{}".format(urls)
     )
 
     intro_message = Text.from_markup(
@@ -73,16 +73,16 @@ def make_config_display(Mode, Endpoints, Urls) -> Panel:
     message = Table.grid(padding=1)
     message.add_column()
     message.add_column(no_wrap=True)
-    message.add_row(intro_message, sponsor_message)
+    message.add_row(intro_message, info)
 
     message_panel = Panel(
         Align.center(
-            RenderGroup(intro_message, "\n", Align.center(sponsor_message)),
+            RenderGroup(intro_message, "\n", Align.center(info)),
             vertical="middle",
         ),
         box=box.ROUNDED,
         padding=(1, 2),
-        title="[b white]Apisim",
+        title="[b white]Config",
         border_style="bright_red",
     )
     return message_panel
@@ -132,32 +132,46 @@ def ratio_resolve(total: int, edges: List[Edge]) -> List[int]:
 
 
 class dashboard:
-    def __init__(self, mode, urls) -> None:
+    def __init__(self, mode: str, urls: any, repeat: int, loop: bool) -> None:
         super().__init__()
         self.mode = mode
         self.urls = urls
-        job_progress = Progress(
+        self.repeat = repeat
+        self.loop = loop
+        self.setup_tasks()
+        self.setup_tasks_layout()
+        self.setup_layout(Header(), self.progress_table, make_config_display(
+            self.mode, self.loop, self.urls), self.total_progress_table)
+
+        self.run()
+
+    def setup_tasks(self) -> None:
+        self.job_progress = Progress(
             "{task.description}",
             SpinnerColumn(),
             BarColumn(),
             TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
         )
-        for url in urls:
-            job_progress.add_task("[cyan]{}".format(url))
 
-        total = sum(task.total for task in job_progress.tasks)
-        overall_progress = Progress()
-        overall_task = overall_progress.add_task("All Jobs", total=int(total))
-        # TODO: add a row for each different url
-        progress_table = Table.grid(expand=True)
-        progress_table.add_row(
-            Panel(job_progress, title="[b]Jobs",
+        for i in range(self.repeat):
+            for url in self.urls:
+                self.job_progress.add_task("[cyan]{}".format(url))
+
+        self.tasktotal = sum(task.total for task in self.job_progress.tasks)
+        self.overall_progress = Progress()
+
+    def setup_tasks_layout(self) -> None:
+        self.overall_task = self.overall_progress.add_task(
+            "All Jobs", total=int(self.tasktotal))
+        self.progress_table = Table.grid(expand=True)
+        self.progress_table.add_row(
+            Panel(self.job_progress, title="[b]Jobs",
                   border_style="red", padding=(1, 2)),
         )
-        total_progress_table = Table.grid(expand=True)
-        total_progress_table.add_row(
+        self.total_progress_table = Table.grid(expand=True)
+        self.total_progress_table.add_row(
             Panel(
-                overall_progress,
+                self.overall_progress,
                 title="Overall Progress",
                 border_style="red",
                 padding=(2, 2),
@@ -182,28 +196,31 @@ class dashboard:
                 border_style="red",
                 padding=(2, 2),
             ),
-
         )
-        layout = make_layout()
-        layout["header"].update(Header())
-        layout["body"].update(progress_table)
-        layout["box2"].update(
+
+    def setup_layout(self, header, body, statusbox, footer) -> None:
+        self.layout = make_layout()
+        self.layout["header"].update(header)
+        self.layout["body"].update(body)
+        self.layout["box2"].update(
             Panel(make_syntax(), border_style="green"))
-        layout["box2"].visible = False
-        layout["box1"].update(Panel(make_config_display(
-            self.mode, self.urls, self.urls), border_style="red"))
-        layout["footer"].update(total_progress_table)
+        self.layout["box2"].visible = False
+        self.layout["statusbox"].update(Panel(statusbox, border_style="red"))
+        self.layout["footer"].update(footer)
 
-        with Live(layout, refresh_per_second=10, screen=True):
-            while not overall_progress.finished:
+    def run(self):
+        with Live(self.layout, refresh_per_second=10, screen=True):
+            while not self.overall_progress.finished:
                 sleep(0.1)
-                for job in job_progress.tasks:
+                for job in self.job_progress.tasks:
                     if not job.finished:
-                        job_progress.advance(job.id)
+                        self.job_progress.advance(job.id)
 
-                completed = sum(task.completed for task in job_progress.tasks)
-                overall_progress.update(overall_task, completed=completed)
+                completed = sum(
+                    task.completed for task in self.job_progress.tasks)
+                self.overall_progress.update(
+                    self.overall_task, completed=completed)
 
 
 if __name__ == '__main__':
-    x = dashboard('x', 'x')
+    x = dashboard('get', {'e', 'x'}, 3, False)
