@@ -1,14 +1,14 @@
 import requests
 import json
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from torpy.http.requests import TorRequests, tor_requests_session
-from unit import request_unit, response_unit, token_unit
+from concurrent.futures import ThreadPoolExecutor
+from torpy.http.requests import TorRequests
+from unit import request_unit, response_unit
 from multiprocessing.pool import ThreadPool
 import tqdm
 
 
 class customrequest:
-    def __init__(self, verbose=False, fallback_enabled=True, repeat=1, print_steps=False) -> None:
+    def __init__(self, verbose=False, fallback_enabled=False, repeat=1, print_steps=False) -> None:
         super().__init__()
         self._response = None
         self._units = []
@@ -36,7 +36,7 @@ class customrequest:
                     try:
                         if req_unit.token != "":
                             headers = {
-                                'Authorization': 'access_token %s'.format(req_unit.token)}
+                                'Authorization': 'Bearer {}'.format(req_unit.token)}
                         else:
                             headers = None
                         res = sess.get(
@@ -49,10 +49,10 @@ class customrequest:
                         return res.text
                     except BaseException:
                         status = "Failed (Tor)"
-                        print('get link %s error', req_unit.url[0])
+                        print('get link {} error', req_unit.url[0])
                     finally:
                         response = response_unit(
-                            req_unit.url[0], res.content, req_unit.mode, res.elapsed.total_seconds(), res.status_code, status)
+                            req_unit.url[0], value=res.content, mode=req_unit.mode, time=res.elapsed.total_seconds(), status=res.status_code, outcome=status)
                         self._units.append(response)
 
                 pool = ThreadPool(10)
@@ -63,19 +63,19 @@ class customrequest:
                 pool.join()
 
     def multi_request(self, req_unit: request_unit):
+        """
+        Carries out the request(s) in a request unit.
+        Param: req_unit: a request unit class instance
+        """
         if req_unit.auth:
             req_unit = self.login(req_unit)
-        print('in multi')
-        print(req_unit)
 
         def req(req_unit):
             status = ""
-            if req_unit.token:
-                headers = {
-                    'Authorization': 'Bearer {}'.format(req_unit.token)}
-                print(headers)
-            else:
-                headers = None
+
+            headers = {
+                'Authorization': 'Bearer {}'.format(req_unit.token)}
+
             if req_unit.mode == 'get':
                 res = requests.get(
                     req_unit.url[0], stream=True, headers=headers)
@@ -89,7 +89,7 @@ class customrequest:
             else:
                 status = "Succes"
             response = response_unit(
-                req_unit.url[0], res.content, req_unit.mode, res.elapsed.total_seconds(), res.status_code, status)
+                req_unit.url[0], value=res.content, mode=req_unit.mode, time=res.elapsed.total_seconds(), status=res.status_code, outcome=status)
             self._calls += 1
             if self.print_steps:
                 print(str(self._calls) + " '" + req_unit.mode +
@@ -103,7 +103,7 @@ class customrequest:
                 for i in range(self.repeat):
                     threads.append(executor.submit(req, req_unit))
 
-        if self._failed_requests != [] and self.fallback_enabled == True:
+        if self.fallback_enabled:
             # TODO: multi safe request should receive a list
             for unit in self._failed_requests:
                 self.multi_safe_request(unit)

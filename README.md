@@ -1,7 +1,7 @@
 # APIsim
-
+apisim allows users to easily schedule & handle large amounths of requests,
+and outputs usable data. 
 ## Installation
-Api testing and automation
 ### pypi
 `pip install APIsim`
 
@@ -10,16 +10,19 @@ Api testing and automation
 ## Usage - CLI
 
 call 'get' on an endpoint 100 times, fallback to tor if failed
-`apisim --url 'https://api.agify.io?name=apisim' -r=100 -c=get -fb`
+`apisim --url 'https://api.agify.io?name=apisim' -r=100 -m=get -fb`
 
 call 'get' on an endpoint, print each step
-`apisim --url 'https://api.agify.io?name=apisim' -c=get -ps`
+`apisim --url 'https://api.agify.io?name=apisim' -m=get -ps`
 
 call 'get' on multiple endpoints, print out the results in a table
 `apisim --url 'https://api.agify.io?name=apisim' 'https://api.agify.io?name=python' 'https://api.agify.io?name=rest' -r=100 -c=get -v`
 
 authenticate on a api, call 'get' on a endpoint, print out the results in a table
-`apisim --authurl 'https://api.test.io/api/token/'  --creds testaccount bot123 --command=get --url 'https://api.test.io/api/data/' -v`
+`apisim --authurl 'https://api.test.io/api/token/'  --creds testaccount bot123 --mode=get --url 'https://api.test.io/api/data/' -v`
+
+authenticate on a api, call 'get' on a endpoint, print out the results in ascii dashboard
+`apisim --authurl 'https://api.test.io/api/token/'  --creds testaccount bot123 --mode=get --url 'https://api.test.io/api/data/' --command visual`
 
 ## Capabilities
 
