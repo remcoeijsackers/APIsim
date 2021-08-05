@@ -6,6 +6,8 @@ from unit import request_unit
 from customrequests import customrequest
 from transformer import datatransformer
 
+from cli.apisimcli import dashboard
+
 
 class apisim:
     def __init__(self, verbose=False) -> None:
@@ -22,6 +24,10 @@ class apisim:
     def _print_responses(self, resp_list: List):
         trans = datatransformer()
         print(trans.print_response_table(resp_list))
+
+    def dashboard(self, mode, urls):
+        x = dashboard(mode, urls)
+        return x
 
     def call(self, mode, urls=None, command=None, input_file=None, password=None, username=None, repeat=1, loginurl=None, print_steps=False, fallback=False):
         self._req_unit = request_unit(urls, mode)
@@ -123,6 +129,8 @@ if __name__ == '__main__':
         else:
             u.call(urls=args.url, mode=(args.mode),
                    repeat=args.repeat, print_steps=args.printsteps, fallback=args.fallback)
+    if args.command == "visual":
+        u.dashboard(args.mode, args.url)
 
     if args.file:
         if args.mode == "get":
