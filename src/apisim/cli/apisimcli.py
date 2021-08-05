@@ -1,7 +1,4 @@
-"""
-Demonstrates a Rich "application" using the Layout and Live classes.
-"""
-
+# based on https://github.com/willmcgugan/rich/blob/master/examples/fullscreen.py
 from time import sleep
 from rich.live import Live
 from datetime import datetime
