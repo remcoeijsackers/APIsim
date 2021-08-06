@@ -25,8 +25,8 @@ class apisim:
         trans = datatransformer()
         print(trans.print_response_table(resp_list))
 
-    def dashboard(self, mode, urls):
-        x = dashboard(mode, urls)
+    def dashboard(self, mode, urls, repeat):
+        x = dashboard(mode, urls, repeat)
         return x
 
     def call(self, mode, urls=None, command=None, input_file=None, password=None, username=None, repeat=1, loginurl=None, print_steps=False, fallback=False):
@@ -130,7 +130,7 @@ if __name__ == '__main__':
             u.call(urls=args.url, mode=(args.mode),
                    repeat=args.repeat, print_steps=args.printsteps, fallback=args.fallback)
     if args.command == "visual":
-        u.dashboard(args.mode, args.url)
+        u.dashboard(args.mode, args.url, args.repeat)
 
     if args.file:
         if args.mode == "get":
