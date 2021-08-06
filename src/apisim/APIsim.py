@@ -25,11 +25,11 @@ class apisim:
         trans = datatransformer()
         print(trans.print_response_table(resp_list))
 
-    def dashboard(self, mode, urls):
-        x = dashboard(mode, urls)
+    def dashboard(self, mode, urls, repeat):
+        x = dashboard(mode, urls, repeat)
         return x
 
-    def call(self, mode, urls=None, command=None, input_file=None, password=None, username=None, repeat=1, loginurl=None, print_steps=False, fallback=False):
+    def call(self, mode, urls=None, command=None, input_file=None, password=None, username=None, repeat=1, loginurl=None, print_steps=False, fallback=False, print_table=False):
         self._req_unit = request_unit(urls, mode)
         req = customrequest(
             repeat=repeat, print_steps=print_steps, fallback_enabled=fallback)
@@ -40,7 +40,8 @@ class apisim:
         if command == None:
             req.multi_request(req_unit=self._req_unit)
             # TODO: The response should always be returned, but printing out to a table should be an option
-            self._print_responses(req.return_responses())
+            if print_table:
+                self._print_responses(req.return_responses())
 
         if command == "safe":
             return req.multi_safe_request(self._req_unit)
@@ -116,25 +117,29 @@ if __name__ == '__main__':
                         )
 
     parser.add_argument("-v", "--verbose", action="store_true",
-                        help="increase output verbosity")
+                        help="increase output verbosity", default=False)
 
     args = parser.parse_args()
 
     u = apisim()
 
-    if args.command == None:
-        if args.creds:
-            u.call(urls=args.url, mode=(args.mode), loginurl=args.authurl,
-                   username=args.creds[0], password=args.creds[1], repeat=args.repeat, print_steps=args.printsteps, fallback=args.fallback)
-        else:
-            u.call(urls=args.url, mode=(args.mode),
-                   repeat=args.repeat, print_steps=args.printsteps, fallback=args.fallback)
-    if args.command == "visual":
-        u.dashboard(args.mode, args.url)
-
     if args.file:
         if args.mode == "get":
-            u.call(command="file", mode=(args.mode), input_file=args.file)
+            u.call(command="file", mode=(args.mode), input_file=args.file, print_table=args.verbose)
         if args.mode == "post":
             u.call(command="file", mode=(args.mode),
                    urls=args.url, input_file=args.file)
+
+    if args.command == None:
+        if args.creds:
+            u.call(urls=args.url, mode=(args.mode), loginurl=args.authurl,
+                   username=args.creds[0], password=args.creds[1], repeat=args.repeat, print_steps=args.printsteps, fallback=args.fallback, print_table=args.verbose)
+        else:
+            if args.url:
+                u.call(urls=args.url, mode=(args.mode),
+                   repeat=args.repeat, print_steps=args.printsteps, fallback=args.fallback, print_table=args.verbose)
+
+    if args.command == "visual":
+        u.dashboard(args.mode, args.url, args.repeat)
+
+

@@ -14,6 +14,8 @@ from rich.table import Table
 from rich.text import Text
 from rich.prompt import Prompt
 
+import requests
+
 console = Console()
 
 
@@ -132,12 +134,12 @@ def ratio_resolve(total: int, edges: List[Edge]) -> List[int]:
 
 
 class dashboard:
-    def __init__(self, mode: str, urls: any, repeat: int, loop: bool) -> None:
+    def __init__(self, mode: str, urls: any, repeat: int) -> None:
         super().__init__()
         self.mode = mode
         self.urls = urls
         self.repeat = repeat
-        self.loop = loop
+        self.loop = False
         self.setup_tasks()
         self.setup_tasks_layout()
         self.setup_layout(Header(), self.progress_table, make_config_display(
@@ -146,16 +148,23 @@ class dashboard:
         self.run()
 
     def setup_tasks(self) -> None:
+        self.response_values =  "task_id: , status:"
         self.job_progress = Progress(
             "{task.description}",
             SpinnerColumn(),
             BarColumn(),
             TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
         )
+        self.responses = Text(
+           self.response_values,
+        )
+        def add_task():
+            return self.job_progress.add_task("{}".format(url))
 
         for i in range(self.repeat):
             for url in self.urls:
-                self.job_progress.add_task("[cyan]{}".format(url))
+                self.x = add_task()
+
 
         self.tasktotal = sum(task.total for task in self.job_progress.tasks)
         self.overall_progress = Progress()
@@ -166,6 +175,10 @@ class dashboard:
         self.progress_table = Table.grid(expand=True)
         self.progress_table.add_row(
             Panel(self.job_progress, title="[b]Jobs",
+                  border_style="red", padding=(1, 2)),
+        )
+        self.progress_table.add_row(
+            Panel(self.responses, title="[b]Responses",
                   border_style="red", padding=(1, 2)),
         )
         self.total_progress_table = Table.grid(expand=True)
@@ -214,13 +227,19 @@ class dashboard:
                 sleep(0.1)
                 for job in self.job_progress.tasks:
                     if not job.finished:
-                        self.job_progress.advance(job.id)
+                        res =requests.get(job.description, stream=True)
+                        if res.status_code:
+                            self.responses.append_text(Text("\n" + str(job.id) + " " + res.text))
+                            self.job_progress.advance(job.id, 100)
+                        #else:
+                        #    self.job_progress.stop(job.id)
 
-                completed = sum(
-                    task.completed for task in self.job_progress.tasks)
-                self.overall_progress.update(
-                    self.overall_task, completed=completed)
+                    completed = sum(
+                        task.completed for task in self.job_progress.tasks)
+                    self.overall_progress.update(
+                        self.overall_task, completed=completed)
+            sleep(1)
 
 
 if __name__ == '__main__':
-    x = dashboard('get', {'e', 'x'}, 3, False)
+    x = dashboard('get', {'https://api.agify.io?name=apisim', 'https://api.agify.io?name=apisim', 'https://api.agify.io?name=apisim', 'https://api.agify.io?name=apisim'}, 5, False)
