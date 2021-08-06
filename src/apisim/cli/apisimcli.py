@@ -139,6 +139,7 @@ class dashboard:
         self.mode = mode
         self.urls = urls
         self.repeat = repeat
+        self.loop = False
         self.setup_tasks()
         self.setup_tasks_layout()
         self.setup_layout(Header(), self.progress_table, make_config_display(
