@@ -63,6 +63,9 @@ if __name__ == '__main__':
                                      usage='%(prog)s [options] url(s)',
                                      description='Simulate users calling an api')
 
+    parser.add_argument('eurl', type=str, nargs='*',
+                    help='url when no flags are provided')
+
     parser.add_argument('--url',
                         type=str,
                         help='the api url to call',
@@ -156,6 +159,12 @@ if __name__ == '__main__':
             if args.url:
                 u.call(urls=args.url, mode=(args.mode),
                    repeat=args.repeat, print_steps=args.printsteps, fallback=args.fallback, print_table=args.verbose)
+            else:
+                if args.eurl:
+                    u.call(urls=args.eurl, mode=("get"),
+                   repeat=args.repeat, print_steps=args.printsteps, fallback=args.fallback, print_table=args.verbose)
+                else: 
+                    print("please provide an url to call")
 
     if args.command == "visual":
         u.dashboard(args.mode, args.url, repeat=args.repeat)

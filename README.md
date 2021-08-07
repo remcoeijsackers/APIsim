@@ -9,8 +9,11 @@ and outputs usable data.
 `./setup.py`
 ## Usage - CLI
 
-call 'get' on an endpoint 100 times, fallback to tor if failed
-`apisim --url 'https://api.agify.io?name=apisim' -r=100 -m=get -fb`
+call 'get' on an endpoint,
+`apisim 'https://api.agify.io?name=apisim'`
+
+call 'post' on an endpoint 100 times, fallback to tor if failed
+`apisim --url 'https://api.agify.io?name=apisim' -r=100 -m=post -fb`
 
 call 'get' on an endpoint, print each step
 `apisim --url 'https://api.agify.io?name=apisim' -m=get -ps`
