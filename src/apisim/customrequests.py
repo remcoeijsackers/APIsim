@@ -4,7 +4,6 @@ from concurrent.futures import ThreadPoolExecutor
 from torpy.http.requests import TorRequests
 from unit import request_unit, response_unit
 from multiprocessing.pool import ThreadPool
-import tqdm
 from db.db import query
 
 class customrequest:
@@ -23,6 +22,34 @@ class customrequest:
 
     def return_responses(self):
         return self._units
+
+    def _req(self, req_unit, threads=True):
+            status = ""
+
+            headers = {
+                'Authorization': 'Bearer {}'.format(req_unit.token)}
+
+            if req_unit.mode == 'get':
+                res = requests.get(
+                    req_unit.url[0], stream=True, headers=headers)
+            if req_unit.mode == 'post':
+                res = requests.post(
+                    req_unit.url[0], stream=True, data=req_unit.body[0], headers=headers)
+            if res.status_code != 200:
+                status = "Failed"
+                if self.fallback_enabled:
+                    self._failed_requests.append(req_unit)
+            else:
+                status = "Succes"
+            response = response_unit(
+                req_unit.url[0], value=res.content, mode=req_unit.mode, time=res.elapsed.total_seconds(), status=res.status_code, outcome=status)
+            self._calls += 1
+            if self.print_steps:
+                print(str(self._calls) + " '" + req_unit.mode +
+                      "'" + ' on endpoint ' + req_unit.url[0])
+            self._units.append(response)
+            if not threads:
+                return response
 
     def multi_safe_request(self, req_unit: request_unit) -> None:
         self._calls += 1
@@ -71,38 +98,12 @@ class customrequest:
         if req_unit.auth:
             req_unit = self.login(req_unit)
 
-        def req(req_unit):
-            status = ""
-
-            headers = {
-                'Authorization': 'Bearer {}'.format(req_unit.token)}
-
-            if req_unit.mode == 'get':
-                res = requests.get(
-                    req_unit.url[0], stream=True, headers=headers)
-            if req_unit.mode == 'post':
-                res = requests.post(
-                    req_unit.url[0], stream=True, data=req_unit.body[0], headers=headers)
-            if res.status_code != 200:
-                status = "Failed"
-                if self.fallback_enabled:
-                    self._failed_requests.append(req_unit)
-            else:
-                status = "Succes"
-            response = response_unit(
-                req_unit.url[0], value=res.content, mode=req_unit.mode, time=res.elapsed.total_seconds(), status=res.status_code, outcome=status)
-            self._calls += 1
-            if self.print_steps:
-                print(str(self._calls) + " '" + req_unit.mode +
-                      "'" + ' on endpoint ' + req_unit.url[0])
-            self._units.append(response)
-
         threads = []
 
         with ThreadPoolExecutor(max_workers=50) as executor:
             for url in req_unit.url:
                 for i in range(self.repeat):
-                    threads.append(executor.submit(req, req_unit))
+                    threads.append(executor.submit(self._req, req_unit))
         if self.store:
             q = query()
             q.setup()
@@ -118,39 +119,10 @@ class customrequest:
         if req_unit.auth:
             req_unit = self.login(req_unit)
 
-        def req(req_unit):
-            status = ""
-
-            headers = {
-                'Authorization': 'Bearer {}'.format(req_unit.token)}
-
-            if req_unit.mode == 'get':
-                res = requests.get(
-                    req_unit.url[0], stream=True, headers=headers)
-            if req_unit.mode == 'post':
-                res = requests.post(
-                    req_unit.url[0], stream=True, data=req_unit.body[0], headers=headers)
-            if res.status_code != 200:
-                status = "Failed"
-                if self.fallback_enabled:
-                    self._failed_requests.append(req_unit)
-            else:
-                status = "Succes"
-            response = response_unit(
-                req_unit.url[0], value=res.content, mode=req_unit.mode, time=res.elapsed.total_seconds(), status=res.status_code, outcome=status)
-            self._calls += 1
-            if self.print_steps:
-                print(str(self._calls) + " '" + req_unit.mode +
-                      "'" + ' on endpoint ' + req_unit.url[0])
-            self._units.append(response)
-            return response
-
         for url in req_unit.url:
             for i in range(self.repeat):
-                return req(req_unit)
-                          
-
-
+                return self._req(req_unit,threads=False)
+                        
         if self.fallback_enabled:
             # TODO: multi safe request should receive a list
             for unit in self._failed_requests:
@@ -166,31 +138,28 @@ class customrequest:
         if self._token == []:
             return self.login(req_unit)
 
-
 class filerequest:
     def __init__(self) -> None:
         pass
 
-        def from_file(self, input_file, mode, url=None):
+    def from_file(self, input_file, mode, url=None):
             urls_to_call = []
             data_to_push = []
             if mode == "get":
                 try:
                     with open(input_file, "r") as reader:
                         for line in reader.readlines():
-                            urls_to_call.append(line)
-                        x = request_unit(urls_to_call, mode)
-                        self.multi_request(x)
+                            if mode == "get":
+                                urls_to_call.append(line)
+                            if mode == "post":
+                                data_to_push.append(line)
+                        if mode == "get":
+                            x = request_unit(urls_to_call, mode)
+                            self.multi_request(x)
+                        if mode == "post":
+                            self.multi_request(url, mode, body=data_to_push)
 
                 except TypeError:
                     print("file does not exist")
                     return
-            if mode == "post":
-                try:
-                    with open(input_file, "r") as reader:
-                        for line in reader.readlines():
-                            data_to_push.append(line)
-                        self.multi_request(url, mode, body=data_to_push)
 
-                except TypeError:
-                    print("file does not exist")
