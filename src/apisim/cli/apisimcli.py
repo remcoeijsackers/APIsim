@@ -14,6 +14,8 @@ from rich.table import Table
 from rich.text import Text
 from rich.prompt import Prompt
 
+from customrequests import customrequest
+from unit import request_unit, response_unit
 import requests
 
 console = Console()
@@ -63,9 +65,6 @@ def make_config_display(mode, loop, urls) -> Panel:
     info.add_row(
         "Loop",
         "{}".format(loop),
-    )
-    info.add_row(
-        "Urls", "{}".format(urls)
     )
 
     intro_message = Text.from_markup(
@@ -134,12 +133,13 @@ def ratio_resolve(total: int, edges: List[Edge]) -> List[int]:
 
 
 class dashboard:
-    def __init__(self, mode: str, urls: any, repeat: int) -> None:
+    def __init__(self, mode: str, urls: any, repeat: int, req_unit: request_unit) -> None:
         super().__init__()
         self.mode = mode
         self.urls = urls
         self.repeat = repeat
         self.loop = False
+        self.req_unit = req_unit
         self.setup_tasks()
         self.setup_tasks_layout()
         self.setup_layout(Header(), self.progress_table, make_config_display(
@@ -182,6 +182,10 @@ class dashboard:
                   border_style="red", padding=(1, 2)),
         )
         self.total_progress_table = Table.grid(expand=True)
+        self.failed_jobs_values = "0"
+        self.succeeded_job_values = "0"
+        self.failed_jobs = Text(self.failed_jobs_values)
+        self.succeeded_job = Text(self.succeeded_job_values)
         self.total_progress_table.add_row(
             Panel(
                 self.overall_progress,
@@ -191,13 +195,13 @@ class dashboard:
             ),
 
             Panel(
-                "0",
+                self.failed_jobs,
                 title="Failed jobs",
                 border_style="red",
                 padding=(2, 2),
             ),
             Panel(
-                "0",
+                self.succeeded_job,
                 title="Succeeded jobs",
                 border_style="red",
                 padding=(2, 2),
@@ -222,15 +226,27 @@ class dashboard:
         self.layout["footer"].update(footer)
 
     def run(self):
+        req = customrequest(repeat=1, print_steps=False, fallback_enabled=True)
         with Live(self.layout, refresh_per_second=10, screen=True):
             while not self.overall_progress.finished:
                 sleep(0.1)
                 for job in self.job_progress.tasks:
                     if not job.finished:
-                        res =requests.get(job.description, stream=True)
-                        if res.status_code:
-                            self.responses.append_text(Text("\n" + str(job.id) + " " + res.text))
+                        res = req.custom_request(self.req_unit)
+                        response = response_unit(res.url,res.value,res.mode,res.time,res.status,res.outcome)
+
+                        if response.status:
+                            x = int(self.succeeded_job.plain) 
+                            x += 1
+                            self.succeeded_job.right_crop(len(self.succeeded_job.plain))
+                            self.succeeded_job.append_text(Text(str(x)))
+                            self.responses.append_text(Text("\n" + str(job.id) + " " + str(bytes(response.value))))
                             self.job_progress.advance(job.id, 100)
+                            if response.status != 200:
+                                x = int(self.failed_job.plain) 
+                                x += 1
+                                self.failed_jobs.right_crop(len(self.failed_jobs.plain))
+                                self.failed_jobs.append_text(Text(str(x)))
                         #else:
                         #    self.job_progress.stop(job.id)
 
@@ -238,7 +254,7 @@ class dashboard:
                         task.completed for task in self.job_progress.tasks)
                     self.overall_progress.update(
                         self.overall_task, completed=completed)
-            sleep(1)
+            sleep(3)
 
 
 if __name__ == '__main__':
