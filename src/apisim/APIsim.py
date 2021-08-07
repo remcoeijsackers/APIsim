@@ -8,7 +8,7 @@ from transformer import datatransformer
 
 from cli.apisimdashboard import dashboard
 from db.db import query
-
+from util.util import settings
 class apisim:
     def __init__(self, verbose=False, store=False) -> None:
         super().__init__()
@@ -30,6 +30,10 @@ class apisim:
         self._req_unit = request_unit(urls, mode)
         x = dashboard(mode, urls, repeat, self._req_unit)
         return x
+    
+    def settings(self):
+        s = settings("src/apisim/config/config.yaml")
+        return s.editconfig()
 
     def query_db(self):
         q = query()
@@ -151,6 +155,9 @@ if __name__ == '__main__':
     
     parser.add_argument("-q", "--query", action="store_true",
                         help="query the db", default=False)
+    
+    parser.add_argument("-e", "--edit", action="store_true",
+                        help="edit the settings")
 
     args = parser.parse_args()
 
@@ -158,6 +165,9 @@ if __name__ == '__main__':
 
     if args.store:
         u = apisim(store=True)
+
+    if args.edit:
+        u.settings()
 
     if args.query:
         u.query_db()
@@ -182,7 +192,8 @@ if __name__ == '__main__':
                     u.call(urls=args.eurl, mode=("get"),
                    repeat=args.repeat, print_steps=args.printsteps, fallback=args.fallback, print_table=args.verbose)
                 else: 
-                    print(u.print_help()+ '\n please provide an url to login to')
+                    if not args.edit or args.query:
+                        print(u.print_help()+ '\n please provide an url to login to')
 
     if args.command == "visual":
         u.dashboard(args.mode, args.url, repeat=args.repeat)
