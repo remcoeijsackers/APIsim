@@ -6,13 +6,14 @@ from unit import request_unit
 from customrequests import customrequest
 from transformer import datatransformer
 
-from cli.apisimcli import dashboard
-
+from cli.apisimdashboard import dashboard
+from db.db import query
 
 class apisim:
-    def __init__(self, verbose=False) -> None:
+    def __init__(self, verbose=False, store=False) -> None:
         super().__init__()
         self.verbose = verbose
+        self.store = store
         self._req_unit = request_unit
 
     def data_from_file(self, input_file, mode, url=None):
@@ -30,17 +31,21 @@ class apisim:
         x = dashboard(mode, urls, repeat, self._req_unit)
         return x
 
+    def query_db(self):
+        q = query()
+        print(q.get())
+
+
     def call(self, mode, urls=None, command=None, input_file=None, password=None, username=None, repeat=1, loginurl=None, print_steps=False, fallback=False, print_table=False):
         self._req_unit = request_unit(urls, mode)
         req = customrequest(
-            repeat=repeat, print_steps=print_steps, fallback_enabled=fallback)
+            repeat=repeat, print_steps=print_steps, fallback_enabled=fallback, store=self.store)
         if username and password:
             self._req_unit = request_unit(
                 urls, mode, {"username": username, "password": password}, auth_url=loginurl[0])
 
         if command == None:
             req.multi_request(req_unit=self._req_unit)
-            # TODO: The response should always be returned, but printing out to a table should be an option
             if print_table:
                 self._print_responses(req.return_responses())
 
@@ -121,10 +126,21 @@ if __name__ == '__main__':
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="increase output verbosity", default=False)
 
+    parser.add_argument("-s", "--store", action="store_true",
+                        help="store the results of the requests", default=False)
+    
+    parser.add_argument("-q", "--query", action="store_true",
+                        help="query the db", default=False)
+
     args = parser.parse_args()
 
     u = apisim()
+    if args.store:
+        u = apisim(store=True)
 
+    if args.query:
+        u.query_db()
+        
     if args.file:
         if args.mode == "get":
             u.call(command="file", mode=(args.mode), input_file=args.file, print_table=args.verbose)
