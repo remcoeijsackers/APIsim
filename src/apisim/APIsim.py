@@ -2,17 +2,21 @@ from typing import List
 import pandas as pd
 import argparse
 
-from unit import request_unit
+from unit import request_unit, config_unit
 from customrequests import customrequest
 from transformer import datatransformer
 
 from cli.apisimdashboard import dashboard
 from db.db import query
-from util.util import settings
+from util.util import Settings
 class apisim:
     def __init__(self, verbose=False, store=False) -> None:
         super().__init__()
-        self.verbose = verbose
+        self.settings = Settings("src/apisim/config/config.yaml")
+        cu = self.settings.loadconfig()
+        self.verbose = cu.auto_printtable
+        self.print_steps = cu.auto_printsteps
+        self.repeat = cu.count_repeat
         self.store = store
         self._req_unit = request_unit
 
@@ -26,20 +30,19 @@ class apisim:
         trans = datatransformer()
         print(trans.print_response_table(resp_list))
 
-    def dashboard(self, mode, urls, repeat=1, fallback=True):
+    def dashboard(self, mode, urls, repeat=1, fallback=True) -> dashboard:
         self._req_unit = request_unit(urls, mode)
-        x = dashboard(mode, urls, repeat, self._req_unit)
-        return x
+        dash = dashboard(mode, urls, repeat, self._req_unit)
+        return dash
     
-    def settings(self):
-        s = settings("src/apisim/config/config.yaml")
-        return s.editconfig()
+    def edit_settings(self):
+        return self.settings.editconfig()
 
     def query_db(self):
         q = query()
         print(q.get())
     
-    def print_help(self):
+    def print_help(self) -> str:
         helpv = """
         APIsim [url] [options]
 
@@ -54,12 +57,15 @@ class apisim:
         --mode/-m: [String] Type of request 
                 * get
                 * post
+
         --file/-f: [String] Input of output file for the request
         --fallback/-fb: [None] Fallback to the tor network
         --verbose/-v: [None] Print out the results in a table
         --store/-s: [None] Store the results in the db
         --query/-q:  [None] Query the db
         --printsteps/-ps: [None] print each step
+
+        --edit/-e: [None] edit config file
         """
         return helpv
 
@@ -87,6 +93,8 @@ class apisim:
 
 
 if __name__ == '__main__':
+    u = apisim()
+
     parser = argparse.ArgumentParser(prog='APIsim',
                                      usage='%(prog)s [options] url(s)',
                                      description='Simulate users calling an api')
@@ -161,13 +169,11 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    u = apisim()
-
     if args.store:
         u = apisim(store=True)
 
     if args.edit:
-        u.settings()
+        u.edit_settings()
 
     if args.query:
         u.query_db()
