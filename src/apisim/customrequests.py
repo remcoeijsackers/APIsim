@@ -5,10 +5,10 @@ from torpy.http.requests import TorRequests
 from unit import request_unit, response_unit
 from multiprocessing.pool import ThreadPool
 import tqdm
-
+from db.db import query
 
 class customrequest:
-    def __init__(self, verbose=False, fallback_enabled=False, repeat=1, print_steps=False) -> None:
+    def __init__(self, verbose=False, fallback_enabled=False, repeat=1, print_steps=False, store=False) -> None:
         super().__init__()
         self._response = None
         self._units = []
@@ -17,6 +17,7 @@ class customrequest:
         self.fallback_enabled = fallback_enabled
         self.repeat = repeat
         self.print_steps = print_steps
+        self.store = store
         self._calls = 0
         self._token = ""  # TODO: This needs to be handled on a per request_unit instance
 
@@ -102,6 +103,12 @@ class customrequest:
             for url in req_unit.url:
                 for i in range(self.repeat):
                     threads.append(executor.submit(req, req_unit))
+        if self.store:
+            q = query()
+            q.setup()
+            for res_unit in self._units:
+                q.write(res_unit)
+
 
     def custom_request(self, req_unit: request_unit) -> response_unit:
         """
