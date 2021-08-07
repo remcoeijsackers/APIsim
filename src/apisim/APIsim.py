@@ -2,17 +2,21 @@ from typing import List
 import pandas as pd
 import argparse
 
-from unit import request_unit
+from unit import request_unit, config_unit
 from customrequests import customrequest
 from transformer import datatransformer
 
 from cli.apisimdashboard import dashboard
 from db.db import query
-
+from util.util import Settings
 class apisim:
     def __init__(self, verbose=False, store=False) -> None:
         super().__init__()
-        self.verbose = verbose
+        self.settings = Settings("src/apisim/config/config.yaml")
+        cu = self.settings.loadconfig()
+        self.verbose = cu.auto_printtable
+        self.print_steps = cu.auto_printsteps
+        self.repeat = cu.count_repeat
         self.store = store
         self._req_unit = request_unit
 
@@ -26,14 +30,44 @@ class apisim:
         trans = datatransformer()
         print(trans.print_response_table(resp_list))
 
-    def dashboard(self, mode, urls, repeat=1, fallback=True):
+    def dashboard(self, mode, urls, repeat=1, fallback=True) -> dashboard:
         self._req_unit = request_unit(urls, mode)
-        x = dashboard(mode, urls, repeat, self._req_unit)
-        return x
+        dash = dashboard(mode, urls, repeat, self._req_unit)
+        return dash
+    
+    def edit_settings(self):
+        return self.settings.editconfig()
 
     def query_db(self):
         q = query()
         print(q.get())
+    
+    def print_help(self) -> str:
+        helpv = """
+        APIsim [url] [options]
+
+        Options [Params]:
+        --url: [String] Urls to call
+        --authurl: [String] Url to login to
+        --creds: [String] Credentials to login with 
+                * username, password
+        --command: [String]
+                * visual :Run the cli dashboard
+        --repeat/-r: [Int] Times the calls should be repeated
+        --mode/-m: [String] Type of request 
+                * get
+                * post
+
+        --file/-f: [String] Input of output file for the request
+        --fallback/-fb: [None] Fallback to the tor network
+        --verbose/-v: [None] Print out the results in a table
+        --store/-s: [None] Store the results in the db
+        --query/-q:  [None] Query the db
+        --printsteps/-ps: [None] print each step
+
+        --edit/-e: [None] edit config file
+        """
+        return helpv
 
 
     def call(self, mode, urls=None, command=None, input_file=None, password=None, username=None, repeat=1, loginurl=None, print_steps=False, fallback=False, print_table=False):
@@ -59,9 +93,14 @@ class apisim:
 
 
 if __name__ == '__main__':
+    u = apisim()
+
     parser = argparse.ArgumentParser(prog='APIsim',
                                      usage='%(prog)s [options] url(s)',
                                      description='Simulate users calling an api')
+
+    parser.add_argument('eurl', type=str, nargs='*',
+                    help='url when no flags are provided')
 
     parser.add_argument('--url',
                         type=str,
@@ -98,13 +137,6 @@ if __name__ == '__main__':
                         help='type of command',
                         )
 
-    parser.add_argument('--delay',
-                        '-d',
-                        type=int,
-                        help='seconds delay between repeats',
-                        default=0
-                        )
-
     parser.add_argument('--file',
                         '-f',
                         type=str,
@@ -131,12 +163,17 @@ if __name__ == '__main__':
     
     parser.add_argument("-q", "--query", action="store_true",
                         help="query the db", default=False)
+    
+    parser.add_argument("-e", "--edit", action="store_true",
+                        help="edit the settings")
 
     args = parser.parse_args()
 
-    u = apisim()
     if args.store:
         u = apisim(store=True)
+
+    if args.edit:
+        u.edit_settings()
 
     if args.query:
         u.query_db()
@@ -156,6 +193,13 @@ if __name__ == '__main__':
             if args.url:
                 u.call(urls=args.url, mode=(args.mode),
                    repeat=args.repeat, print_steps=args.printsteps, fallback=args.fallback, print_table=args.verbose)
+            else:
+                if args.eurl:
+                    u.call(urls=args.eurl, mode=("get"),
+                   repeat=args.repeat, print_steps=args.printsteps, fallback=args.fallback, print_table=args.verbose)
+                else: 
+                    if not args.edit or args.query:
+                        print(u.print_help()+ '\n please provide an url to login to')
 
     if args.command == "visual":
         u.dashboard(args.mode, args.url, repeat=args.repeat)

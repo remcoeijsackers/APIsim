@@ -31,3 +31,10 @@ class response_unit:
     time: float
     status: str
     outcome: str
+
+@dataclass
+class config_unit:
+    auto_printsteps: bool
+    auto_fallback: bool
+    auto_printtable: bool
+    count_repeat: int
