@@ -23,7 +23,7 @@ class customrequest:
     def return_responses(self):
         return self._units
 
-    def multi_safe_request(self, req_unit: request_unit):
+    def multi_safe_request(self, req_unit: request_unit) -> None:
         self._calls += 1
         if self.print_steps:
             print(str(self._calls) + " Safe " + " '" + req_unit.mode +
@@ -62,7 +62,7 @@ class customrequest:
                 pool.close()
                 pool.join()
 
-    def multi_request(self, req_unit: request_unit):
+    def multi_request(self, req_unit: request_unit) -> response_unit:
         """
         Carries out the request(s) in a request unit.
         Param: req_unit: a request unit class instance
@@ -102,6 +102,47 @@ class customrequest:
             for url in req_unit.url:
                 for i in range(self.repeat):
                     threads.append(executor.submit(req, req_unit))
+
+    def custom_request(self, req_unit: request_unit) -> response_unit:
+        """
+        Carries out the request(s) in a request unit.
+        Param: req_unit: a request unit class instance
+        """
+        if req_unit.auth:
+            req_unit = self.login(req_unit)
+
+        def req(req_unit):
+            status = ""
+
+            headers = {
+                'Authorization': 'Bearer {}'.format(req_unit.token)}
+
+            if req_unit.mode == 'get':
+                res = requests.get(
+                    req_unit.url[0], stream=True, headers=headers)
+            if req_unit.mode == 'post':
+                res = requests.post(
+                    req_unit.url[0], stream=True, data=req_unit.body[0], headers=headers)
+            if res.status_code != 200:
+                status = "Failed"
+                if self.fallback_enabled:
+                    self._failed_requests.append(req_unit)
+            else:
+                status = "Succes"
+            response = response_unit(
+                req_unit.url[0], value=res.content, mode=req_unit.mode, time=res.elapsed.total_seconds(), status=res.status_code, outcome=status)
+            self._calls += 1
+            if self.print_steps:
+                print(str(self._calls) + " '" + req_unit.mode +
+                      "'" + ' on endpoint ' + req_unit.url[0])
+            self._units.append(response)
+            return response
+
+        for url in req_unit.url:
+            for i in range(self.repeat):
+                return req(req_unit)
+                          
+
 
         if self.fallback_enabled:
             # TODO: multi safe request should receive a list
