@@ -34,6 +34,30 @@ class apisim:
     def query_db(self):
         q = query()
         print(q.get())
+    
+    def print_help(self):
+        helpv = """
+        APIsim [url] [options]
+
+        Options [Params]:
+        --url: [String] Urls to call
+        --authurl: [String] Url to login to
+        --creds: [String] Credentials to login with 
+                * username, password
+        --command: [String]
+                * visual :Run the cli dashboard
+        --repeat/-r: [Int] Times the calls should be repeated
+        --mode/-m: [String] Type of request 
+                * get
+                * post
+        --file/-f: [String] Input of output file for the request
+        --fallback/-fb: [None] Fallback to the tor network
+        --verbose/-v: [None] Print out the results in a table
+        --store/-s: [None] Store the results in the db
+        --query/-q:  [None] Query the db
+        --printsteps/-ps: [None] print each step
+        """
+        return helpv
 
 
     def call(self, mode, urls=None, command=None, input_file=None, password=None, username=None, repeat=1, loginurl=None, print_steps=False, fallback=False, print_table=False):
@@ -101,13 +125,6 @@ if __name__ == '__main__':
                         help='type of command',
                         )
 
-    parser.add_argument('--delay',
-                        '-d',
-                        type=int,
-                        help='seconds delay between repeats',
-                        default=0
-                        )
-
     parser.add_argument('--file',
                         '-f',
                         type=str,
@@ -138,6 +155,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     u = apisim()
+
     if args.store:
         u = apisim(store=True)
 
@@ -164,7 +182,7 @@ if __name__ == '__main__':
                     u.call(urls=args.eurl, mode=("get"),
                    repeat=args.repeat, print_steps=args.printsteps, fallback=args.fallback, print_table=args.verbose)
                 else: 
-                    print("please provide an url to call")
+                    print(u.print_help()+ '\n please provide an url to login to')
 
     if args.command == "visual":
         u.dashboard(args.mode, args.url, repeat=args.repeat)
