@@ -23,7 +23,7 @@ class customrequest:
     def return_responses(self):
         return self._units
 
-    def _req(self, req_unit, threads=True):
+    def __req(self, req_unit, threads=True):
             status = ""
 
             headers = {
@@ -103,7 +103,7 @@ class customrequest:
         with ThreadPoolExecutor(max_workers=50) as executor:
             for url in req_unit.url:
                 for i in range(self.repeat):
-                    threads.append(executor.submit(self._req, req_unit))
+                    threads.append(executor.submit(self.__req, req_unit))
         if self.store:
             q = query()
             q.setup()
@@ -121,7 +121,7 @@ class customrequest:
 
         for url in req_unit.url:
             for i in range(self.repeat):
-                return self._req(req_unit,threads=False)
+                return self.__req(req_unit,threads=False)
                         
         if self.fallback_enabled:
             # TODO: multi safe request should receive a list
