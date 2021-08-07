@@ -27,3 +27,33 @@ class Settings:
         print(exc)
       return cu 
       
+class helpers:
+  def __init__(self) -> None:
+      pass
+
+  def print_help(self) -> str:
+        helpv = """
+        APIsim [url] [options]
+
+        Options [Params]:
+        --url: [String] Urls to call
+        --authurl: [String] Url to login to
+        --creds: [String] Credentials to login with 
+                * username, password
+        --command: [String]
+                * visual :Run the cli dashboard
+        --repeat/-r: [Int] Times the calls should be repeated
+        --mode/-m: [String] Type of request 
+                * get
+                * post
+
+        --file/-f: [String] Input of output file for the request
+        --fallback/-fb: [None] Fallback to the tor network
+        --verbose/-v: [None] Print out the results in a table
+        --store/-s: [None] Store the results in the db
+        --query/-q:  [None] Query the db
+        --printsteps/-ps: [None] print each step
+
+        --edit/-e: [None] edit config file
+        """
+        return helpv

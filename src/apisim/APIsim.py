@@ -8,7 +8,7 @@ from transformer import datatransformer
 
 from cli.apisimdashboard import dashboard
 from db.db import query
-from util.util import Settings
+from util.util import Settings, helpers
 class apisim:
     def __init__(self, verbose=False, store=False) -> None:
         super().__init__()
@@ -35,40 +35,15 @@ class apisim:
         dash = dashboard(mode, urls, repeat, self._req_unit)
         return dash
     
-    def edit_settings(self):
+    def edit_settings(self) -> None:
         return self.settings.editconfig()
 
     def query_db(self):
         q = query()
         print(q.get())
     
-    def print_help(self) -> str:
-        helpv = """
-        APIsim [url] [options]
-
-        Options [Params]:
-        --url: [String] Urls to call
-        --authurl: [String] Url to login to
-        --creds: [String] Credentials to login with 
-                * username, password
-        --command: [String]
-                * visual :Run the cli dashboard
-        --repeat/-r: [Int] Times the calls should be repeated
-        --mode/-m: [String] Type of request 
-                * get
-                * post
-
-        --file/-f: [String] Input of output file for the request
-        --fallback/-fb: [None] Fallback to the tor network
-        --verbose/-v: [None] Print out the results in a table
-        --store/-s: [None] Store the results in the db
-        --query/-q:  [None] Query the db
-        --printsteps/-ps: [None] print each step
-
-        --edit/-e: [None] edit config file
-        """
-        return helpv
-
+    def print_help(self) -> None:
+        print(helpers.print_help())
 
     def call(self, mode, urls=None, command=None, input_file=None, password=None, username=None, repeat=1, loginurl=None, print_steps=False, fallback=False, print_table=False):
         self._req_unit = request_unit(urls, mode)
