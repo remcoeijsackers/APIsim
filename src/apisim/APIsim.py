@@ -6,7 +6,7 @@ from unit import request_unit
 from customrequests import customrequest
 from transformer import datatransformer
 
-from cli.apisimcli import dashboard
+from cli.apisimdashboard import dashboard
 
 
 class apisim:
@@ -40,7 +40,6 @@ class apisim:
 
         if command == None:
             req.multi_request(req_unit=self._req_unit)
-            # TODO: The response should always be returned, but printing out to a table should be an option
             if print_table:
                 self._print_responses(req.return_responses())
 
