@@ -20,31 +20,24 @@ class apisim:
         self.store = store
         self._req_unit = request_unit
 
-    def data_from_file(self, input_file, mode, url=None):
+    def __data_from_file(self, input_file, mode, url=None):
         pass
 
-    def requests_from_file(self):
+    def __data_to_file(self, output_file, mode, url=None):
         pass
 
-    def _print_responses(self, resp_list: List):
+    def __requests_from_file(self):
+        pass
+
+    def __print_responses(self, resp_list: List):
         trans = datatransformer()
         print(trans.print_response_table(resp_list))
 
-    def dashboard(self, mode, urls, repeat=1, fallback=True) -> dashboard:
+    def dashboardcall(self, mode, urls, repeat=1, fallback=True) -> dashboard:
         self._req_unit = request_unit(urls, mode)
         dash = dashboard(mode, urls, repeat, self._req_unit)
         return dash
     
-    def edit_settings(self) -> None:
-        return self.settings.editconfig()
-
-    def query_db(self):
-        q = query()
-        print(q.get())
-    
-    def print_help(self) -> None:
-        print(helpers.print_help())
-
     def call(self, mode, urls=None, command=None, input_file=None, password=None, username=None, repeat=1, loginurl=None, print_steps=False, fallback=False, print_table=False):
         self._req_unit = request_unit(urls, mode)
         req = customrequest(
@@ -56,15 +49,27 @@ class apisim:
         if command == None:
             req.multi_request(req_unit=self._req_unit)
             if print_table:
-                self._print_responses(req.return_responses())
+                self.__print_responses(req.return_responses())
 
-        if command == "safe":
-            return req.multi_safe_request(self._req_unit)
-        if command == "file":
-            if mode == "get":
-                return self.from_file(input_file, mode)
-            if mode == "post":
-                return self.from_file(input_file, mode, url=urls)
+    def filecall(self, mode, xfile):
+        if mode == "get":
+            return self.__data_from_file(xfile, mode)
+        if mode == "post":
+            return self.from_file(xfile, mode, url=urls)
+
+    def safecall(self, mode) -> None:
+        return req.multi_safe_request(self._req_unit)
+
+    def edit_settings(self) -> None:
+        return self.settings.editconfig()
+
+    def query_db(self) -> None:
+        q = query()
+        print(q.get())
+    
+    def print_help(self) -> None:
+        print(helpers.print_help())
+
 
 
 if __name__ == '__main__':
@@ -177,6 +182,6 @@ if __name__ == '__main__':
                         print(u.print_help()+ '\n please provide an url to login to')
 
     if args.command == "visual":
-        u.dashboard(args.mode, args.url, repeat=args.repeat)
+        u.dashboardcall(args.mode, args.url, repeat=args.repeat)
 
 
