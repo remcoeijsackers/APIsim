@@ -29,8 +29,6 @@ class Settings:
       return cu 
       
 class helpers:
-  def __init__(self) -> None:
-      pass
 
   def print_help(self) -> str:
         helpv = """

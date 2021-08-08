@@ -10,9 +10,9 @@ from cli.apisimdashboard import dashboard
 from db.db import query
 from util.util import Settings, helpers
 class apisim:
-    def __init__(self, print_steps, verbose, fallback, store, repeat) -> None:
+    def __init__(self, print_steps, table, fallback, store, repeat) -> None:
         super().__init__()
-        self.verbose = verbose
+        self.table = table
         self.print_steps = print_steps
         self.fallback = fallback
         self.repeat = repeat
@@ -46,7 +46,7 @@ class apisim:
                 urls, mode, {"username": username, "password": password}, auth_url=loginurl[0])
 
         req.multi_request(req_unit=self._req_unit)
-        if self.verbose:
+        if self.table:
             self.__print_responses(req.return_responses())
 
     def filecall(self, mode, xfile):
@@ -68,7 +68,8 @@ class apisim:
         print(q.get())
     
     def print_help(self) -> None:
-        print(helpers.print_help())
+        h = helpers()
+        return h.print_help()
 
 
 
@@ -109,11 +110,14 @@ if __name__ == '__main__':
                         nargs=1
                         )
 
-    parser.add_argument('--commands', choices=['ps', 'fb', 'v', 's', 'dash'],
+    parser.add_argument('--commands', choices=['verbose', 'fallback', 'table', 'store'],
                         nargs="+",
                         type=str,
                         help='type of command',
                         )
+
+    parser.add_argument("-v", "--visual", action="store_true",
+                        help="show cli dashboard", default=False)
 
     parser.add_argument('--file',
                         '-f',
@@ -133,24 +137,24 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     ps = cu.auto_printsteps
-    v = cu.auto_printtable
-    s = cu.auto_storeo
+    t = cu.auto_printtable
+    s = cu.auto_store
     fb = cu.auto_fallback
     r = cu.count_repeat
 
     try:
-        if 'ps' in args.commands:
+        if 'verbose' in args.commands:
             ps = True
-        if 'v' in args.commands:
-            v = True
-        if 's' in args.commands:
+        if 'table' in args.commands:
+            t = True
+        if 'store' in args.commands:
             s = True
-        if 'fb' in args.commands:
+        if 'fallback' in args.commands:
             fb = True
     except:
         pass
     
-    u = apisim(ps, v, fb, s, args.repeat)
+    u = apisim(print_steps=ps, table=t, fallback=fb, store=s, repeat=args.repeat)
 
     if args.edit:
         u.edit_settings()
@@ -160,23 +164,24 @@ if __name__ == '__main__':
         
     if args.file:
         if args.mode == "get":
-            u.filecall(command="file", mode=(args.mode), input_file=args.file, print_table=args.verbose)
+            u.filecall(command="file", mode=(args.mode), input_file=args.file)
         if args.mode == "post":
             u.filecall(command="file", mode=(args.mode),
                    urls=args.url, input_file=args.file)
 
     if args.creds:
         u.authcall(urls=args.url, mode=(args.mode), loginurl=args.authurl,
-                   username=args.creds[0], password=args.creds[1], repeat=args.repeat, print_steps=args.printsteps, fallback=args.fallback, print_table=args.verbose)
+                   username=args.creds[0], password=args.creds[1])
 
     if args.url:
-        u.call(urls=args.url, mode=(args.mode),
-                   repeat=args.repeat, print_steps=args.printsteps, fallback=args.fallback, print_table=args.verbose)
-    else:
-        if not args.edit or args.query:
-            print(u.print_help()+ '\n please provide an url to login to')
+        if not args.visual:
+            u.call(urls=args.url, mode=(args.mode))
+        else:
+            u.dashboardcall(args.mode, args.url)
 
-    if "dash" in args.commands:
-        u.dashboardcall(args.mode, args.url, repeat=args.repeat)
+    if not args.url and not args.creds and not args.edit and not args.file and not args.query:
+        print(u.print_help() + '\n please provide an url to login to')
+
+
 
 
