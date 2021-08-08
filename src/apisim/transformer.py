@@ -4,9 +4,7 @@ from tabulate import tabulate
 
 
 class datatransformer:
-    def __init__(self) -> None:
-        pass
-
+    
     def print_response_table(self, resp_list: List):
         tables = pd.DataFrame(resp_list)
         tables.columns = ["endpoint", "value", "mode",

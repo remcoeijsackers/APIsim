@@ -12,11 +12,9 @@ from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn
 from rich.syntax import Syntax
 from rich.table import Table
 from rich.text import Text
-from rich.prompt import Prompt
 
 from customrequests import customrequest
 from unit import request_unit, response_unit
-import requests
 
 console = Console()
 
@@ -247,15 +245,9 @@ class dashboard:
                                 x += 1
                                 self.failed_jobs.right_crop(len(self.failed_jobs.plain))
                                 self.failed_jobs.append_text(Text(str(x)))
-                        #else:
-                        #    self.job_progress.stop(job.id)
 
                     completed = sum(
                         task.completed for task in self.job_progress.tasks)
                     self.overall_progress.update(
                         self.overall_task, completed=completed)
             sleep(3)
-
-
-if __name__ == '__main__':
-    x = dashboard('get', {'https://api.agify.io?name=apisim', 'https://api.agify.io?name=apisim', 'https://api.agify.io?name=apisim', 'https://api.agify.io?name=apisim'}, 5, False)
