@@ -138,28 +138,4 @@ class customrequest:
         if self._token == []:
             return self.login(req_unit)
 
-class filerequest:
-    def __init__(self) -> None:
-        pass
-
-    def from_file(self, input_file, mode, url=None):
-            urls_to_call = []
-            data_to_push = []
-            if mode == "get":
-                try:
-                    with open(input_file, "r") as reader:
-                        for line in reader.readlines():
-                            if mode == "get":
-                                urls_to_call.append(line)
-                            if mode == "post":
-                                data_to_push.append(line)
-                        if mode == "get":
-                            x = request_unit(urls_to_call, mode)
-                            self.multi_request(x)
-                        if mode == "post":
-                            self.multi_request(url, mode, body=data_to_push)
-
-                except TypeError:
-                    print("file does not exist")
-                    return
 
