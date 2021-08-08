@@ -21,8 +21,9 @@ class Settings:
         ps = x.get('auto_printsteps')
         tb = x.get('auto_printtable')
         fb = x.get('auto_fallback')
+        s = x.get('auto_store')
         cr = x.get('count_repeat')
-        cu = config_unit(ps,fb, tb, cr)
+        cu = config_unit(ps,fb, tb, s, cr)
       except yaml.YAMLError as exc:
         print(exc)
       return cu 

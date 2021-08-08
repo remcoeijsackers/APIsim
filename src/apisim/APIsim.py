@@ -10,13 +10,12 @@ from cli.apisimdashboard import dashboard
 from db.db import query
 from util.util import Settings, helpers
 class apisim:
-    def __init__(self, verbose=False, store=False) -> None:
+    def __init__(self, print_steps, verbose, fallback, store, repeat) -> None:
         super().__init__()
-        self.settings = Settings("src/apisim/config/config.yaml")
-        cu = self.settings.loadconfig()
-        self.verbose = cu.auto_printtable
-        self.print_steps = cu.auto_printsteps
-        self.repeat = cu.count_repeat
+        self.verbose = verbose
+        self.print_steps = print_steps
+        self.fallback = fallback
+        self.repeat = repeat
         self.store = store
         self._req_unit = request_unit
 
@@ -33,23 +32,22 @@ class apisim:
         trans = datatransformer()
         print(trans.print_response_table(resp_list))
 
-    def dashboardcall(self, mode, urls, repeat=1, fallback=True) -> dashboard:
+    def dashboardcall(self, mode, urls) -> dashboard:
         self._req_unit = request_unit(urls, mode)
-        dash = dashboard(mode, urls, repeat, self._req_unit)
+        dash = dashboard(mode, urls, self.repeat, self._req_unit)
         return dash
     
-    def call(self, mode, urls=None, command=None, input_file=None, password=None, username=None, repeat=1, loginurl=None, print_steps=False, fallback=False, print_table=False):
+    def call(self, mode, urls=None, password=None, username=None, loginurl=None):
         self._req_unit = request_unit(urls, mode)
         req = customrequest(
-            repeat=repeat, print_steps=print_steps, fallback_enabled=fallback, store=self.store)
+            repeat=self.repeat, print_steps=self.print_steps, fallback_enabled=self.fallback, store=self.store)
         if username and password:
             self._req_unit = request_unit(
                 urls, mode, {"username": username, "password": password}, auth_url=loginurl[0])
 
-        if command == None:
-            req.multi_request(req_unit=self._req_unit)
-            if print_table:
-                self.__print_responses(req.return_responses())
+        req.multi_request(req_unit=self._req_unit)
+        if self.verbose:
+            self.__print_responses(req.return_responses())
 
     def filecall(self, mode, xfile):
         if mode == "get":
@@ -58,6 +56,8 @@ class apisim:
             return self.from_file(xfile, mode, url=urls)
 
     def safecall(self, mode) -> None:
+        req = customrequest(
+            repeat=self.repeat, print_steps=self.print_steps, fallback_enabled=self.fallback, store=self.store)
         return req.multi_safe_request(self._req_unit)
 
     def edit_settings(self) -> None:
@@ -73,29 +73,14 @@ class apisim:
 
 
 if __name__ == '__main__':
-    u = apisim()
-
     parser = argparse.ArgumentParser(prog='APIsim',
                                      usage='%(prog)s [options] url(s)',
                                      description='Simulate users calling an api')
 
-    parser.add_argument('eurl', type=str, nargs='*',
-                    help='url when no flags are provided')
-
-    parser.add_argument('--url',
+    parser.add_argument('url',
                         type=str,
                         help='the api url to call',
                         nargs='*'
-                        )
-    parser.add_argument('--creds',
-                        type=str,
-                        help='credentials to get a token',
-                        nargs='+'
-                        )
-    parser.add_argument('--authurl',
-                        type=str,
-                        help='url to get a token',
-                        nargs=1
                         )
 
     parser.add_argument('--repeat',
@@ -112,7 +97,20 @@ if __name__ == '__main__':
                         default="get"
                         )
 
-    parser.add_argument('--command',
+    parser.add_argument('--creds',
+                        type=str,
+                        help='credentials to get a token',
+                        nargs='+'
+                        )
+
+    parser.add_argument('--authurl',
+                        type=str,
+                        help='url to get a token',
+                        nargs=1
+                        )
+
+    parser.add_argument('--commands', choices=['ps', 'fb', 'v', 's', 'dash'],
+                        nargs="+",
                         type=str,
                         help='type of command',
                         )
@@ -124,33 +122,35 @@ if __name__ == '__main__':
                         default=""
                         )
 
-    parser.add_argument('--printsteps',
-                        '-ps',
-                        help='print the api calling steps',
-                        action="store_true"
-                        )
-    parser.add_argument('--fallback',
-                        '-fb',
-                        action="store_true",
-                        help='fallback to tor if fails'
-                        )
-
-    parser.add_argument("-v", "--verbose", action="store_true",
-                        help="increase output verbosity", default=False)
-
-    parser.add_argument("-s", "--store", action="store_true",
-                        help="store the results of the requests", default=False)
-    
     parser.add_argument("-q", "--query", action="store_true",
                         help="query the db", default=False)
     
     parser.add_argument("-e", "--edit", action="store_true",
                         help="edit the settings")
 
-    args = parser.parse_args()
+    settings = Settings("src/apisim/config/config.yaml")
+    cu = settings.loadconfig()
 
-    if args.store:
-        u = apisim(store=True)
+    args = parser.parse_args()
+    ps = cu.auto_printsteps
+    v = cu.auto_printtable
+    s = cu.auto_storeo
+    fb = cu.auto_fallback
+    r = cu.count_repeat
+
+    try:
+        if 'ps' in args.commands:
+            ps = True
+        if 'v' in args.commands:
+            v = True
+        if 's' in args.commands:
+            s = True
+        if 'fb' in args.commands:
+            fb = True
+    except:
+        pass
+    
+    u = apisim(ps, v, fb, s, args.repeat)
 
     if args.edit:
         u.edit_settings()
@@ -160,28 +160,23 @@ if __name__ == '__main__':
         
     if args.file:
         if args.mode == "get":
-            u.call(command="file", mode=(args.mode), input_file=args.file, print_table=args.verbose)
+            u.filecall(command="file", mode=(args.mode), input_file=args.file, print_table=args.verbose)
         if args.mode == "post":
-            u.call(command="file", mode=(args.mode),
+            u.filecall(command="file", mode=(args.mode),
                    urls=args.url, input_file=args.file)
 
-    if args.command == None:
-        if args.creds:
-            u.call(urls=args.url, mode=(args.mode), loginurl=args.authurl,
+    if args.creds:
+        u.authcall(urls=args.url, mode=(args.mode), loginurl=args.authurl,
                    username=args.creds[0], password=args.creds[1], repeat=args.repeat, print_steps=args.printsteps, fallback=args.fallback, print_table=args.verbose)
-        else:
-            if args.url:
-                u.call(urls=args.url, mode=(args.mode),
-                   repeat=args.repeat, print_steps=args.printsteps, fallback=args.fallback, print_table=args.verbose)
-            else:
-                if args.eurl:
-                    u.call(urls=args.eurl, mode=("get"),
-                   repeat=args.repeat, print_steps=args.printsteps, fallback=args.fallback, print_table=args.verbose)
-                else: 
-                    if not args.edit or args.query:
-                        print(u.print_help()+ '\n please provide an url to login to')
 
-    if args.command == "visual":
+    if args.url:
+        u.call(urls=args.url, mode=(args.mode),
+                   repeat=args.repeat, print_steps=args.printsteps, fallback=args.fallback, print_table=args.verbose)
+    else:
+        if not args.edit or args.query:
+            print(u.print_help()+ '\n please provide an url to login to')
+
+    if "dash" in args.commands:
         u.dashboardcall(args.mode, args.url, repeat=args.repeat)
 
 
