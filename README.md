@@ -4,6 +4,7 @@ and outputs & stores usable data.
 ## Installation
 
 ### source
+Clone the repo, in root dir of repo;
 `pip install .`
 ## Usage - CLI
 
