@@ -1,12 +1,10 @@
 # APIsim
-apisim allows users to easily schedule & handle large amounths of requests,
-and outputs usable data. 
+apisim allows users to easily handle multiple requests,
+and outputs & stores usable data. 
 ## Installation
-### pypi
-`pip install APIsim`
 
 ### source
-`./setup.py`
+`pip install .`
 ## Usage - CLI
 
 call 'get' on an endpoint,
@@ -40,18 +38,3 @@ query the database
 
 change the settings
 `apisim -e`
-## Capabilities
-
-* The user can run any number of requests, and get the response (meta)data in any number of formats.
-* The user can set the requests to run on a schedule/loop continuosly, and should be able to easily pipe trough the output. 
-* The user can store the outputs, and qeury it easily. 
-
-* The user can set up 'missions' that can consist of multiple unrelated requests, and tie this to a schedule.
-
-* The user can provide an input file for 2 goals;
-    * A file with endpoints that the program will call with set rules. 
-    * A file with data that the program will push with set rules.
-
-* The user can provide an output file for 2 goals;
-    * A file that will contain all the mission data
-    * A file that will contain the response data of the requests

@@ -2,10 +2,10 @@ import os
 from subprocess import call
 import yaml
 
-from unit import config_unit
+from ..unit import config_unit
 class Settings:
 
-  def __init__(self, config) -> None:
+  def __init__(self, config=None) -> None:
       self.config = config
 
   def editconfig(self):
