@@ -1,8 +1,7 @@
 from typing import List
-import pandas as pd
 import argparse
 
-from unit import request_unit, config_unit
+from unit import request_unit
 from customrequests import customrequest
 from transformer import datatransformer
 
@@ -18,15 +17,6 @@ class apisim:
         self.repeat = repeat
         self.store = store
         self._req_unit = request_unit
-
-    def __data_from_file(self, input_file, mode, url=None):
-        pass
-
-    def __data_to_file(self, output_file, mode, url=None):
-        pass
-
-    def __requests_from_file(self):
-        pass
 
     def __print_responses(self, resp_list: List):
         trans = datatransformer()
@@ -48,12 +38,6 @@ class apisim:
         req.multi_request(req_unit=self._req_unit)
         if self.table:
             self.__print_responses(req.return_responses())
-
-    def filecall(self, mode, xfile):
-        if mode == "get":
-            return self.__data_from_file(xfile, mode)
-        if mode == "post":
-            return self.from_file(xfile, mode, url=urls)
 
     def safecall(self, mode) -> None:
         req = customrequest(
@@ -119,13 +103,6 @@ if __name__ == '__main__':
     parser.add_argument("-v", "--visual", action="store_true",
                         help="show cli dashboard", default=False)
 
-    parser.add_argument('--file',
-                        '-f',
-                        type=str,
-                        help='input file to get data',
-                        default=""
-                        )
-
     parser.add_argument("-q", "--query", action="store_true",
                         help="query the db", default=False)
     
@@ -161,13 +138,6 @@ if __name__ == '__main__':
 
     if args.query:
         u.query_db()
-        
-    if args.file:
-        if args.mode == "get":
-            u.filecall(command="file", mode=(args.mode), input_file=args.file)
-        if args.mode == "post":
-            u.filecall(command="file", mode=(args.mode),
-                   urls=args.url, input_file=args.file)
 
     if args.creds:
         u.authcall(urls=args.url, mode=(args.mode), loginurl=args.authurl,
@@ -179,7 +149,7 @@ if __name__ == '__main__':
         else:
             u.dashboardcall(args.mode, args.url)
 
-    if not args.url and not args.creds and not args.edit and not args.file and not args.query:
+    if not args.url and not args.creds and not args.edit and not args.query:
         print(u.print_help() + '\n please provide an url to login to')
 
 
