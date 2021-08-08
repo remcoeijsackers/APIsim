@@ -37,4 +37,5 @@ class config_unit:
     auto_printsteps: bool
     auto_fallback: bool
     auto_printtable: bool
+    auto_store: bool
     count_repeat: int
