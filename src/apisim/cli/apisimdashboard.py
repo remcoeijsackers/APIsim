@@ -13,8 +13,8 @@ from rich.syntax import Syntax
 from rich.table import Table
 from rich.text import Text
 
-from customrequests import customrequest
-from unit import request_unit, response_unit
+from ..customrequests import customrequest
+from ..unit import request_unit, response_unit
 
 console = Console()
 

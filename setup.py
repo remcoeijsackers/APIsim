@@ -41,7 +41,7 @@ setup(
     packages=setuptools.find_packages(where="src", exclude=["tests", "*.tests", "*.tests.*", "tests.*"]),
 
     entry_points={
-         'console_scripts': ['apisim=src/apisim.py'],
+         'console_scripts': ['apisim=apisim:exc'],
     },
     install_requires=REQUIRED,
     include_package_data=True,
