@@ -2,11 +2,13 @@ import os
 from subprocess import call
 import yaml
 
+from ..config import config as cf
+
 from ..unit import config_unit
 class Settings:
 
-  def __init__(self, config=None) -> None:
-      self.config = config
+  def __init__(self) -> None:
+      self.config = cf
 
   def editconfig(self):
     EDITOR = os.environ.get('EDITOR') if os.environ.get('EDITOR') else 'vim'
@@ -15,17 +17,12 @@ class Settings:
       call([EDITOR, tf.name])
 
   def loadconfig(self) -> config_unit:
-    with open(self.config, 'r') as stream:
-      try:
-        x = yaml.safe_load(stream)
-        ps = x.get('auto_printsteps')
-        tb = x.get('auto_printtable')
-        fb = x.get('auto_fallback')
-        s = x.get('auto_store')
-        cr = x.get('count_repeat')
-        cu = config_unit(ps,fb, tb, s, cr)
-      except yaml.YAMLError as exc:
-        print(exc)
+      ps = cf.auto_printsteps
+      tb = cf.auto_printtable
+      fb = cf.auto_fallback
+      s = cf.auto_store
+      cr = cf.count_repeat
+      cu = config_unit(ps,fb, tb, s, cr)
       return cu 
       
 class helpers:
