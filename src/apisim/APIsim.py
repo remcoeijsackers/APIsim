@@ -11,7 +11,7 @@ from .util.util import Settings, helpers
 class apisim:
     def __init__(self, print_steps, table, fallback, store, repeat) -> None:
         super().__init__()
-        self.settings = Settings("src/apisim/config/config.yaml")
+        self.settings = Settings()
         self.table = table
         self.print_steps = print_steps
         self.fallback = fallback
@@ -109,7 +109,7 @@ def run():
         parser.add_argument("-e", "--edit", action="store_true",
                             help="edit the settings")
 
-        settings = Settings("src/apisim/config/config.yaml")
+        settings = Settings()
         cu = settings.loadconfig()
 
         args = parser.parse_args()
@@ -128,10 +128,12 @@ def run():
                 s = True
             if 'fallback' in args.commands:
                 fb = True
+            if args.repeat:
+                r = args.repeat
         except:
             pass
         
-        u = apisim(print_steps=ps, table=t, fallback=fb, store=s, repeat=args.repeat)
+        u = apisim(print_steps=ps, table=t, fallback=fb, store=s, repeat=r)
 
         if args.edit:
             u.edit_settings()
