@@ -2,9 +2,9 @@ import requests
 import json
 from concurrent.futures import ThreadPoolExecutor
 from torpy.http.requests import TorRequests
-from unit import request_unit, response_unit
+from .unit import request_unit, response_unit
 from multiprocessing.pool import ThreadPool
-from db.db import query
+from .db.db import query
 
 class customrequest:
     def __init__(self, verbose=False, fallback_enabled=False, repeat=1, print_steps=False, store=False) -> None:

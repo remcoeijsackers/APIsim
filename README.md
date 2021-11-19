@@ -1,12 +1,11 @@
 # APIsim
-apisim allows users to easily schedule & handle large amounths of requests,
-and outputs usable data. 
+apisim allows users to easily handle multiple requests,
+and outputs & stores usable data. 
 ## Installation
-### pypi
-`pip install APIsim`
 
 ### source
-`./setup.py`
+Clone the repo, in root dir of repo;
+`pip install .`
 ## Usage - CLI
 
 call 'get' on an endpoint,
@@ -43,6 +42,7 @@ change the settings
 
 ### Dashboard
 ![apisim dashboard](assets/apisim.png)
+
 ## Capabilities
 
 * The user can run any number of requests, and get the response (meta)data in any number of formats.

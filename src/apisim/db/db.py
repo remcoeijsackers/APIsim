@@ -1,5 +1,5 @@
 import sqlite3
-from unit import response_unit
+from ..unit import response_unit
 
 class query:
     def __init__(self) -> None:
