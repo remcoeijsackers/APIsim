@@ -13,13 +13,13 @@ call 'get' on an endpoint,
 `apisim 'https://api.agify.io?name=apisim'`
 
 call 'post' on an endpoint 100 times, fallback to tor if failed
-`apisim --url 'https://api.agify.io?name=apisim' -r=100 -m=post --commands fallback`
+`apisim 'https://api.agify.io?name=apisim' -r=100 -m=post --commands fallback`
 
 call 'get' on an endpoint, print each step 
-`apisim --url 'https://api.agify.io?name=apisim' -m=get --commands verbose`
+`apisim 'https://api.agify.io?name=apisim' -m=get --commands verbose`
 
 call 'get' on multiple endpoints, print out the results in a table
-`apisim --url 'https://api.agify.io?name=apisim' 'https://api.agify.io?name=python' 'https://api.agify.io?name=rest' -m=get --commands table`
+`apisim 'https://api.agify.io?name=apisim' 'https://api.agify.io?name=python' 'https://api.agify.io?name=rest' -m=get --commands table`
 
 #### Authenticate
 
@@ -33,13 +33,16 @@ authenticate on a api, call 'get' on a endpoint, print out the results in ascii 
 
 #### Store & Query
 call 'get' on a endpoint, store the results in the db
-`apisim --mode=get --url 'https://api.test.io/api/data/' --commands store`
+`apisim --mode=get 'https://api.test.io/api/data/' --commands store`
 
 query the database 
 `apisim -q (optional filters)`
 
 change the settings
 `apisim -e`
+
+### Dashboard
+![apisim dashboard](assets/apisim.png)
 ## Capabilities
 
 * The user can run any number of requests, and get the response (meta)data in any number of formats.
