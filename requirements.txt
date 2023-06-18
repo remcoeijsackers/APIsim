@@ -3,7 +3,7 @@ cffi==1.14.5
 chardet==4.0.0
 colorama==0.4.4
 commonmark==0.9.1
-cryptography==3.4.7
+cryptography==41.0.0
 idna==2.10
 numpy==1.21.0
 pandas==1.2.5
